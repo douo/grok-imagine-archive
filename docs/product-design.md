@@ -132,6 +132,8 @@
 设计原则：
 
 - 只读
+- 无布局抖动懒加载与平滑淡入（利用图片尺寸预占位，配以骨架屏效果）
+- 自动滚动懒加载（基于 `IntersectionObserver` 自动触发分页，无手动 Load More 按钮）
 - 可以快速扫图/扫视频
 - 可以按 folder、媒体类型、prompt、时间过滤
 - 详情里直接看到媒体、prompt、raw JSON、folder、依赖关系

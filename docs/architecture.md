@@ -160,6 +160,7 @@ Grok API
 - SQLite 只读打开
 - token 中间件可选
 - 媒体路径必须位于归档根目录之下
+- 前端渲染机制：支持图片/视频宽高 `aspect-ratio` 预占位（无布局抖动），并结合 `IntersectionObserver` 实现自动滚动加载（无手动 Load More 按钮）。加载过程中提供骨架屏占位与平滑淡入动画效果。
 
 ## 3. 数据模型
 
