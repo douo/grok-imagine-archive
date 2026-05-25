@@ -1,0 +1,13 @@
+[[accounts]]
+alias = "andy"
+enabled = true
+
+# Paste only into config/accounts.toml, never into this example file.
+sso = "REPLACE_WITH_SSO_COOKIE_VALUE"
+cf_clearance = "REPLACE_WITH_CF_CLEARANCE_IF_NEEDED"
+cf_cookies = ""
+
+# Keep these aligned with the browser session that produced the cookies.
+user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+browser = "chrome136"
+proxy = ""
