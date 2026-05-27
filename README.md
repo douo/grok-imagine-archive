@@ -99,6 +99,32 @@ Copy the example config:
 cp config/accounts.example.toml config/accounts.toml
 ```
 
+Get the values from the same browser session that can open your Grok saved or
+liked images:
+
+1. Open `https://grok.com/` in Chrome or Edge and sign in.
+2. Open the Grok Imagine saved or liked page once, then keep that tab open.
+3. Right-click the page and choose **Inspect**. You can also press `F12`, or
+   `Command+Option+I` on macOS.
+4. In Developer Tools, open **Application**. If you cannot see it, click the
+   `>>` tab menu. In Firefox, the matching tab is **Storage**.
+5. In the left sidebar, open **Cookies** > `https://grok.com`.
+6. Find the cookie named `sso`. Copy only its **Value** field into `sso`.
+   Do not include `sso=`.
+7. Find the cookie named `cf_clearance`. Copy only its **Value** field into
+   `cf_clearance`. Do not include `cf_clearance=`. If it is not listed, leave
+   `cf_clearance = ""` first and run `auth check`; if Cloudflare blocks the
+   check, refresh Grok in the browser and look again.
+8. Open the **Console** tab, type `navigator.userAgent`, and press Enter.
+   Copy the text inside the quotes into `user_agent`.
+9. Set `browser` to the Chrome major version from the user agent. For example,
+   if the user agent contains `Chrome/136...`, use `browser = "chrome136"`.
+   If unsure, keep the example value for the first check.
+10. Leave `proxy = ""` unless the browser session used the same proxy.
+
+Never copy the full `Cookie:` request header, and never paste cookie values into
+GitHub issues, Reddit posts, screenshots, or logs.
+
 Minimal config example:
 
 ```toml

@@ -82,6 +82,28 @@ Grok Imagine 的 Saved 页面是滚动懒加载的，账号资源多时，靠浏
 cp config/accounts.example.toml config/accounts.toml
 ```
 
+从能正常打开 Grok Saved/Liked 图片的同一个浏览器里复制这些值：
+
+1. 用 Chrome 或 Edge 打开 `https://grok.com/` 并登录。
+2. 进入一次 Grok Imagine 的 Saved 或 Liked 页面，然后不要关闭这个标签页。
+3. 在页面上右键，选择“检查”。也可以按 `F12`；macOS 可以按 `Command+Option+I`。
+4. 在开发者工具里打开 **Application**。如果没看到，点顶部的 `>>` 菜单找一下。
+   Firefox 里对应的是 **Storage**。
+5. 在左侧打开 **Cookies** > `https://grok.com`。
+6. 找到名为 `sso` 的 cookie。只复制它的 **Value** 这一栏，填到 `sso`。
+   不要复制 `sso=`。
+7. 找到名为 `cf_clearance` 的 cookie。只复制它的 **Value** 这一栏，填到
+   `cf_clearance`。不要复制 `cf_clearance=`。如果没有这一项，先保留
+   `cf_clearance = ""` 并运行 `auth check`；如果提示 Cloudflare 拦截，再刷新
+   Grok 页面重新找一次。
+8. 打开 **Console** 标签，输入 `navigator.userAgent` 并回车。把引号里的内容复制到
+   `user_agent`。
+9. `browser` 填 User-Agent 里的 Chrome 大版本。例如 User-Agent 里有
+   `Chrome/136...`，就填 `browser = "chrome136"`。不确定的话，第一次检查先保留示例值。
+10. 除非登录浏览器时也用了同一个代理，否则保持 `proxy = ""`。
+
+不要复制整段 `Cookie:` 请求头，也不要把 cookie 值贴到 GitHub issue、Reddit、截图或日志里。
+
 最小配置示例：
 
 ```toml
