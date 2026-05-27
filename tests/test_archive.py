@@ -2,8 +2,8 @@ import sqlite3
 
 import pytest
 
-from grok_downloader.archive import Archive
-from grok_downloader.lock import ArchiveLock, ArchiveLockError
+from grok_imagine_archive.archive import Archive
+from grok_imagine_archive.lock import ArchiveLock, ArchiveLockError
 
 
 def test_archive_status_counts_assets_by_role(tmp_path) -> None:

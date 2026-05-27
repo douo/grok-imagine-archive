@@ -1,4 +1,4 @@
-# Grok Downloader Agent Notes
+# Grok Imagine Archive Agent Notes
 
 - Do not pull real account data during release review unless the user explicitly re-authorizes it. Use the mock archive and local verification gates for public-release review.
 - Default account config is local-only at `config/accounts.toml`. Never print token/cookie values.

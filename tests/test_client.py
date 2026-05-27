@@ -1,6 +1,6 @@
-from grok_downloader.client import is_cloudflare_challenge
-from grok_downloader.client import normalize_impersonate
-from grok_downloader.client import response_error_message
+from grok_imagine_archive.client import is_cloudflare_challenge
+from grok_imagine_archive.client import normalize_impersonate
+from grok_imagine_archive.client import response_error_message
 
 
 class DummyResponse:

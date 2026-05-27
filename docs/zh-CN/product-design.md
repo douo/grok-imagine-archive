@@ -4,7 +4,7 @@
 
 ## 1. 产品定位
 
-`grok-downloader` 的定位不是“网页另存为脚本”，而是“Grok Imagine 个人资产归档器”。
+`grok-imagine-archive` 的定位不是“网页另存为脚本”，而是“Grok Imagine 个人资产归档器”。
 
 它面向的核心问题有两个：
 

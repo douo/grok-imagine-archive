@@ -1,4 +1,4 @@
-from grok_downloader.cli import is_loopback_host
+from grok_imagine_archive.cli import is_loopback_host
 
 
 def test_is_loopback_host() -> None:

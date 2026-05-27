@@ -1,8 +1,8 @@
-# Grok Downloader
+# Grok Imagine Archive
 
 [English](../../README.md) | **简体中文**
 
-`grok-downloader` 是一个面向 Grok Imagine Saved/Liked 资产的本地归档工具。它通过官方 Web 接口背后的 JSON API 做只读同步，把账号当前可枚举到的图片、视频、缩略图、提示词、原始 JSON、文件夹关系和派生关系完整保存到本地，并提供一个可离线浏览归档内容的 Web UI。
+`grok-imagine-archive` 是一个面向 Grok Imagine Saved/Liked 资产的本地归档工具。它通过官方 Web 接口背后的 JSON API 做只读同步，把账号当前可枚举到的图片、视频、缩略图、提示词、原始 JSON、文件夹关系和派生关系完整保存到本地，并提供一个可离线浏览归档内容的 Web UI。
 
 这个项目不是一次性的脚本，而是一个长期可维护的归档系统：
 
@@ -41,7 +41,7 @@ Grok Imagine 的 Saved 页面是滚动懒加载的，账号资源多时，靠浏
 - 派生链路，比如原始 post、子 post、输入素材之间的关系
 - 某次归档是否完整、哪些文件失败、是否能安全重试
 
-`grok-downloader` 的目标就是把这些内容变成一个可以反复同步、可以核验、可以浏览的本地资产库。
+`grok-imagine-archive` 的目标就是把这些内容变成一个可以反复同步、可以核验、可以浏览的本地资产库。
 
 ### 核心能力
 
@@ -102,35 +102,35 @@ proxy = ""
 - 可以通过环境变量覆盖路径：
 
 ```bash
-export GROK_DOWNLOADER_CONFIG=/secure/accounts.toml
-export GROK_DOWNLOADER_ARCHIVE=/data/grok-archive
+export GROK_IMAGINE_ARCHIVE_CONFIG=/secure/accounts.toml
+export GROK_IMAGINE_ARCHIVE_ROOT=/data/grok-archive
 ```
 
 ### 2. 先跑连通性检查
 
 ```bash
-uv run grok-downloader auth check --account demo
+uv run grok-imagine-archive auth check --account demo
 ```
 
 ### 3. 小批量验证
 
 ```bash
-uv run grok-downloader sync --account demo --limit 20
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive sync --account demo --limit 20
+uv run grok-imagine-archive verify --account demo
 ```
 
 ### 4. 正式全量同步
 
 ```bash
-uv run grok-downloader sync --account demo --full --download-concurrency 8
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive sync --account demo --full --download-concurrency 8
+uv run grok-imagine-archive verify --account demo
 ```
 
 ### 5. 浏览归档
 
 ```bash
-GROK_DOWNLOADER_WEB_TOKEN='replace-with-long-random-token' \
-  uv run grok-downloader web --account demo --host 127.0.0.1 --port 7860
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN='replace-with-long-random-token' \
+  uv run grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860
 ```
 
 浏览器首次访问：
@@ -172,7 +172,7 @@ archive/accounts/{alias}/
 
 ## 代码结构
 
-主要实现集中在 `src/grok_downloader/`：
+主要实现集中在 `src/grok_imagine_archive/`：
 
 - `cli.py`
   命令入口和参数解析
@@ -205,15 +205,15 @@ archive/accounts/{alias}/
 常用检查：
 
 ```bash
-uv run grok-downloader status --account demo
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive status --account demo
+uv run grok-imagine-archive verify --account demo
 ```
 
 如果出现短暂下载失败：
 
 ```bash
-uv run grok-downloader download --account demo --concurrency 8
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive download --account demo --concurrency 8
+uv run grok-imagine-archive verify --account demo
 ```
 
 ## 安全边界

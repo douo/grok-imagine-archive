@@ -4,7 +4,7 @@
 
 ## 1. Overview
 
-`grok-downloader` can be viewed as four layers:
+`grok-imagine-archive` can be viewed as four layers:
 
 1. Access layer
    CLI and Web UI, responsible for triggering actions and displaying results.
@@ -32,7 +32,7 @@ Grok API
 
 ### 2.1 CLI Entry Point
 
-File: `src/grok_downloader/cli.py`
+File: `src/grok_imagine_archive/cli.py`
 
 Responsibilities:
 
@@ -52,7 +52,7 @@ Command mapping:
 
 ### 2.2 API Client
 
-File: `src/grok_downloader/client.py`
+File: `src/grok_imagine_archive/client.py`
 
 Responsibilities:
 
@@ -69,7 +69,7 @@ Key points:
 
 ### 2.3 Sync Orchestration
 
-File: `src/grok_downloader/sync.py`
+File: `src/grok_imagine_archive/sync.py`
 
 Responsibilities:
 
@@ -92,7 +92,7 @@ Actual `sync_account()` flow:
 
 ### 2.4 Asset Extraction
 
-File: `src/grok_downloader/extract.py`
+File: `src/grok_imagine_archive/extract.py`
 
 Responsibilities:
 
@@ -111,7 +111,7 @@ Key strategies:
 
 ### 2.5 Archive Storage
 
-File: `src/grok_downloader/archive.py`
+File: `src/grok_imagine_archive/archive.py`
 
 Responsibilities:
 
@@ -126,7 +126,7 @@ maintained over time.
 
 ### 2.6 Downloader
 
-File: `src/grok_downloader/download.py`
+File: `src/grok_imagine_archive/download.py`
 
 Responsibilities:
 
@@ -142,7 +142,7 @@ Design traits:
 
 ### 2.7 Verifier
 
-File: `src/grok_downloader/verify.py`
+File: `src/grok_imagine_archive/verify.py`
 
 Responsibilities:
 
@@ -153,7 +153,7 @@ Responsibilities:
 
 ### 2.8 Web UI
 
-File: `src/grok_downloader/web.py`
+File: `src/grok_imagine_archive/web.py`
 
 Responsibilities:
 

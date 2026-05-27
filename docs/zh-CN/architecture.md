@@ -4,7 +4,7 @@
 
 ## 1. 架构总览
 
-`grok-downloader` 可以拆成四层：
+`grok-imagine-archive` 可以拆成四层：
 
 1. 接入层
    CLI 和 Web UI，负责触发操作和展示结果
@@ -31,7 +31,7 @@ Grok API
 
 ### 2.1 CLI 入口
 
-文件：`src/grok_downloader/cli.py`
+文件：`src/grok_imagine_archive/cli.py`
 
 职责：
 
@@ -51,7 +51,7 @@ Grok API
 
 ### 2.2 API 客户端
 
-文件：`src/grok_downloader/client.py`
+文件：`src/grok_imagine_archive/client.py`
 
 职责：
 
@@ -68,7 +68,7 @@ Grok API
 
 ### 2.3 同步编排
 
-文件：`src/grok_downloader/sync.py`
+文件：`src/grok_imagine_archive/sync.py`
 
 职责：
 
@@ -91,7 +91,7 @@ Grok API
 
 ### 2.4 资产提取
 
-文件：`src/grok_downloader/extract.py`
+文件：`src/grok_imagine_archive/extract.py`
 
 职责：
 
@@ -108,7 +108,7 @@ Grok API
 
 ### 2.5 归档存储
 
-文件：`src/grok_downloader/archive.py`
+文件：`src/grok_imagine_archive/archive.py`
 
 职责：
 
@@ -122,7 +122,7 @@ Grok API
 
 ### 2.6 下载器
 
-文件：`src/grok_downloader/download.py`
+文件：`src/grok_imagine_archive/download.py`
 
 职责：
 
@@ -138,7 +138,7 @@ Grok API
 
 ### 2.7 校验器
 
-文件：`src/grok_downloader/verify.py`
+文件：`src/grok_imagine_archive/verify.py`
 
 职责：
 
@@ -149,7 +149,7 @@ Grok API
 
 ### 2.8 Web UI
 
-文件：`src/grok_downloader/web.py`
+文件：`src/grok_imagine_archive/web.py`
 
 职责：
 

@@ -2,9 +2,9 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from grok_downloader.archive import Archive
-from grok_downloader.web import resolve_media_path
-from grok_downloader.web import create_app
+from grok_imagine_archive.archive import Archive
+from grok_imagine_archive.web import resolve_media_path
+from grok_imagine_archive.web import create_app
 
 
 def test_resolve_media_path_allows_archive_relative_path(tmp_path) -> None:
@@ -33,7 +33,7 @@ def test_web_access_token_protects_archive_api(tmp_path, monkeypatch) -> None:
     with Archive("web", root=tmp_path) as archive:
         archive.db.execute("INSERT INTO posts (id, raw_json) VALUES ('post-1', '{}')")
         archive.db.commit()
-    monkeypatch.setenv("GROK_DOWNLOADER_ARCHIVE", str(tmp_path))
+    monkeypatch.setenv("GROK_IMAGINE_ARCHIVE_ROOT", str(tmp_path))
 
     client = TestClient(create_app("web", access_token="secret"))
 
@@ -47,13 +47,13 @@ def test_web_access_token_protects_archive_api(tmp_path, monkeypatch) -> None:
 def test_web_query_token_sets_cookie_for_media_requests(tmp_path, monkeypatch) -> None:
     with Archive("web", root=tmp_path):
         pass
-    monkeypatch.setenv("GROK_DOWNLOADER_ARCHIVE", str(tmp_path))
+    monkeypatch.setenv("GROK_IMAGINE_ARCHIVE_ROOT", str(tmp_path))
 
     client = TestClient(create_app("web", access_token="secret"))
 
     first = client.get("/", params={"token": "secret"})
     assert first.status_code == 200
-    assert "grok_downloader_token" in first.cookies
+    assert "grok_imagine_archive_token" in first.cookies
     second = client.get("/api/folders")
     assert second.status_code == 200
 
@@ -87,7 +87,7 @@ def test_web_posts_are_account_aware_and_search_ids(tmp_path, monkeypatch) -> No
             """
         )
         archive.db.commit()
-    monkeypatch.setenv("GROK_DOWNLOADER_ARCHIVE", str(tmp_path))
+    monkeypatch.setenv("GROK_IMAGINE_ARCHIVE_ROOT", str(tmp_path))
 
     client = TestClient(create_app("web", aliases=["web", "other"]))
 
@@ -148,7 +148,7 @@ def test_web_detail_summarizes_original_and_nested_relationships(
             """
         )
         archive.db.commit()
-    monkeypatch.setenv("GROK_DOWNLOADER_ARCHIVE", str(tmp_path))
+    monkeypatch.setenv("GROK_IMAGINE_ARCHIVE_ROOT", str(tmp_path))
 
     client = TestClient(create_app("web"))
 

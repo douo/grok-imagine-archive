@@ -1,11 +1,11 @@
 services:
-  grok-downloader:
+  grok-imagine-archive:
     build: .
     ports:
       - "127.0.0.1:7860:7860"
     environment:
-      GROK_DOWNLOADER_ARCHIVE: /data/archive
-      GROK_DOWNLOADER_WEB_TOKEN: change-me
+      GROK_IMAGINE_ARCHIVE_ROOT: /data/archive
+      GROK_IMAGINE_ARCHIVE_WEB_TOKEN: change-me
     volumes:
       - ./archive:/data/archive
       - ./config:/app/config:ro

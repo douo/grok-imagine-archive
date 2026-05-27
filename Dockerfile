@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 
 ENV PYTHONUNBUFFERED=1 \
-    GROK_DOWNLOADER_ARCHIVE=/data/archive
+    GROK_IMAGINE_ARCHIVE_ROOT=/data/archive
 
 WORKDIR /app
 
@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir .
 VOLUME ["/data"]
 EXPOSE 7860
 
-CMD ["grok-downloader", "web", "--account", "demo", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["grok-imagine-archive", "web", "--account", "demo", "--host", "0.0.0.0", "--port", "7860"]

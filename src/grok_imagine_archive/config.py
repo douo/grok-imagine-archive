@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_CONFIG = Path(os.getenv("GROK_DOWNLOADER_CONFIG", "config/accounts.toml")).expanduser()
-DEFAULT_ARCHIVE = Path(os.getenv("GROK_DOWNLOADER_ARCHIVE", "archive")).expanduser()
+DEFAULT_CONFIG = Path(os.getenv("GROK_IMAGINE_ARCHIVE_CONFIG", "config/accounts.toml")).expanduser()
+DEFAULT_ARCHIVE = Path(os.getenv("GROK_IMAGINE_ARCHIVE_ROOT", "archive")).expanduser()
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,7 @@ def project_root() -> Path:
 
 
 def archive_root() -> Path:
-    return Path(os.getenv("GROK_DOWNLOADER_ARCHIVE", str(DEFAULT_ARCHIVE))).expanduser()
+    return Path(os.getenv("GROK_IMAGINE_ARCHIVE_ROOT", str(DEFAULT_ARCHIVE))).expanduser()
 
 
 def load_accounts(config_path: Path = DEFAULT_CONFIG) -> list[AccountConfig]:

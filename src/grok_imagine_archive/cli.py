@@ -31,7 +31,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="grok-downloader")
+    parser = argparse.ArgumentParser(prog="grok-imagine-archive")
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -71,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     web.add_argument("--port", type=int, default=7860)
     web.add_argument(
         "--token-env",
-        default="GROK_DOWNLOADER_WEB_TOKEN",
+        default="GROK_IMAGINE_ARCHIVE_WEB_TOKEN",
         help="environment variable containing the optional Web UI access token",
     )
     web.add_argument(

@@ -1,5 +1,5 @@
 [project]
-name = "grok-downloader"
+name = "grok-imagine-archive"
 version = "0.1.0"
 description = "Local backup tool for Grok Imagine saved assets."
 readme = "README.md"
@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-grok-downloader = "grok_downloader.cli:main"
+grok-imagine-archive = "grok_imagine_archive.cli:main"
 
 [dependency-groups]
 dev = [

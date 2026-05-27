@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from urllib.parse import urlparse
 
-from grok_downloader.archive import extract_folder_items
-from grok_downloader.extract import extract_assets, iter_posts
+from grok_imagine_archive.archive import extract_folder_items
+from grok_imagine_archive.extract import extract_assets, iter_posts
 
 
 HAR = Path("samples/grok-imagine-saved-current.har")

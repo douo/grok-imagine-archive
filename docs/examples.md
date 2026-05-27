@@ -43,7 +43,7 @@ Field notes:
 ### Step 1: Verify Account Access
 
 ```bash
-uv run grok-downloader auth check --account demo
+uv run grok-imagine-archive auth check --account demo
 ```
 
 Expected output:
@@ -58,7 +58,7 @@ configuration first.
 ### Step 2: Run A Small Trial Sync
 
 ```bash
-uv run grok-downloader sync --account demo --limit 20
+uv run grok-imagine-archive sync --account demo --limit 20
 ```
 
 Expected output:
@@ -76,7 +76,7 @@ Notes:
 ### Step 3: Verify The Archive
 
 ```bash
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive verify --account demo
 ```
 
 Expected output:
@@ -88,7 +88,7 @@ verify: account=demo posts=18 images=10 videos=4 thumbnails=4 downloaded=18 fail
 ## 3. Full Sync Example
 
 ```bash
-uv run grok-downloader sync --account demo --full --download-concurrency 8
+uv run grok-imagine-archive sync --account demo --full --download-concurrency 8
 ```
 
 Typical output:
@@ -115,8 +115,8 @@ How to read this:
 After the sync, run:
 
 ```bash
-uv run grok-downloader status --account demo
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive status --account demo
+uv run grok-imagine-archive verify --account demo
 ```
 
 ## 4. Resume After Interruption
@@ -126,14 +126,14 @@ Scenario: the network drops during sync, or some media URLs fail temporarily.
 Check status first:
 
 ```bash
-uv run grok-downloader status --account demo
+uv run grok-imagine-archive status --account demo
 ```
 
 If there are missing or failed assets, download them:
 
 ```bash
-uv run grok-downloader download --account demo --concurrency 8
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive download --account demo --concurrency 8
+uv run grok-imagine-archive verify --account demo
 ```
 
 Typical output:
@@ -155,7 +155,7 @@ Meaning:
 ## 5. JSON Status Output
 
 ```bash
-uv run grok-downloader status --account demo --json
+uv run grok-imagine-archive status --account demo --json
 ```
 
 Useful for:
@@ -180,8 +180,8 @@ Fields to watch:
 ### Foreground
 
 ```bash
-GROK_DOWNLOADER_WEB_TOKEN='replace-with-long-random-token' \
-  uv run grok-downloader web --account demo --host 127.0.0.1 --port 7860
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN='replace-with-long-random-token' \
+  uv run grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860
 ```
 
 Console output:
@@ -204,8 +204,8 @@ python - <<'PY' > archive/accounts/demo/web-token.txt
 import secrets
 print(secrets.token_urlsafe(32))
 PY
-GROK_DOWNLOADER_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
-  setsid -f sh -c 'cd /path/to/grok-downloader && exec .venv/bin/grok-downloader web --account demo --host 127.0.0.1 --port 7860 > archive/accounts/demo/logs/web.log 2>&1 < /dev/null'
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
+  setsid -f sh -c 'cd /path/to/grok-imagine-archive && exec .venv/bin/grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860 > archive/accounts/demo/logs/web.log 2>&1 < /dev/null'
 ```
 
 Browser access:
@@ -239,14 +239,14 @@ The detail page supports:
 ### Query Status
 
 ```bash
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   http://127.0.0.1:7860/api/status
 ```
 
 ### Query Posts
 
 ```bash
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   "http://127.0.0.1:7860/api/posts?media=MEDIA_POST_TYPE_VIDEO&limit=5"
 ```
 
@@ -273,7 +273,7 @@ Example response shape:
 ### Query A Detail Record
 
 ```bash
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   http://127.0.0.1:7860/api/posts/<post_id>
 ```
 
@@ -289,7 +289,7 @@ Important fields:
 Build the image:
 
 ```bash
-docker build -t grok-downloader:local .
+docker build -t grok-imagine-archive:local .
 ```
 
 Mount local archive and config, then check status:
@@ -298,9 +298,9 @@ Mount local archive and config, then check status:
 docker run --rm \
   -v "$PWD/archive:/data/archive" \
   -v "$PWD/config:/app/config:ro" \
-  -e GROK_DOWNLOADER_ARCHIVE=/data/archive \
-  grok-downloader:local \
-  grok-downloader status --account demo
+  -e GROK_IMAGINE_ARCHIVE_ROOT=/data/archive \
+  grok-imagine-archive:local \
+  grok-imagine-archive status --account demo
 ```
 
 Use cases:

@@ -13,7 +13,7 @@ from pathlib import Path
 
 def main() -> int:
     if len(sys.argv) != 2:
-        print("usage: create_mock_archive.py /tmp/grok-downloader-mock-archive", file=sys.stderr)
+        print("usage: create_mock_archive.py /tmp/grok-imagine-archive-mock-archive", file=sys.stderr)
         return 2
     root = Path(sys.argv[1]).resolve()
     if root == Path("/") or not str(root).startswith("/tmp/"):

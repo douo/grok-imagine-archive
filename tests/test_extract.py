@@ -1,4 +1,4 @@
-from grok_downloader.extract import extract_assets, iter_posts
+from grok_imagine_archive.extract import extract_assets, iter_posts
 
 
 def test_extracts_nested_media_thumbnail_and_source_urls() -> None:

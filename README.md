@@ -1,8 +1,8 @@
-# Grok Downloader
+# Grok Imagine Archive
 
 **English** | [简体中文](docs/zh-CN/README.md)
 
-`grok-downloader` is a local archive tool for Grok Imagine Saved/Liked assets. It
+`grok-imagine-archive` is a local archive tool for Grok Imagine Saved/Liked assets. It
 uses the JSON APIs behind the official Web interface in read-only mode, then
 stores every enumerable image, video, thumbnail, prompt, raw JSON payload, folder
 relationship, and derivation relationship in a local archive. It also includes a
@@ -52,7 +52,7 @@ reliably preserve:
 - whether an archive run is complete, which files failed, and whether retrying is
   safe
 
-`grok-downloader` turns those remote assets into a local library that can be
+`grok-imagine-archive` turns those remote assets into a local library that can be
 resynced, verified, and browsed.
 
 ### Core Commands
@@ -119,35 +119,35 @@ Notes:
 - You can override the default paths with environment variables:
 
 ```bash
-export GROK_DOWNLOADER_CONFIG=/secure/accounts.toml
-export GROK_DOWNLOADER_ARCHIVE=/data/grok-archive
+export GROK_IMAGINE_ARCHIVE_CONFIG=/secure/accounts.toml
+export GROK_IMAGINE_ARCHIVE_ROOT=/data/grok-archive
 ```
 
 ### 2. Check Connectivity
 
 ```bash
-uv run grok-downloader auth check --account demo
+uv run grok-imagine-archive auth check --account demo
 ```
 
 ### 3. Run A Small Trial Sync
 
 ```bash
-uv run grok-downloader sync --account demo --limit 20
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive sync --account demo --limit 20
+uv run grok-imagine-archive verify --account demo
 ```
 
 ### 4. Run The Full Sync
 
 ```bash
-uv run grok-downloader sync --account demo --full --download-concurrency 8
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive sync --account demo --full --download-concurrency 8
+uv run grok-imagine-archive verify --account demo
 ```
 
 ### 5. Browse The Archive
 
 ```bash
-GROK_DOWNLOADER_WEB_TOKEN='replace-with-long-random-token' \
-  uv run grok-downloader web --account demo --host 127.0.0.1 --port 7860
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN='replace-with-long-random-token' \
+  uv run grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860
 ```
 
 First browser visit:
@@ -189,7 +189,7 @@ Directory roles:
 
 ## Code Layout
 
-Most implementation lives in `src/grok_downloader/`:
+Most implementation lives in `src/grok_imagine_archive/`:
 
 - `cli.py`
   Command entry points and argument parsing.
@@ -224,15 +224,15 @@ After an archive run, the minimum healthy state is:
 Common checks:
 
 ```bash
-uv run grok-downloader status --account demo
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive status --account demo
+uv run grok-imagine-archive verify --account demo
 ```
 
 If a temporary download failure occurs:
 
 ```bash
-uv run grok-downloader download --account demo --concurrency 8
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive download --account demo --concurrency 8
+uv run grok-imagine-archive verify --account demo
 ```
 
 ## Safety Boundaries

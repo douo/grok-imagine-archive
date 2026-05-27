@@ -25,11 +25,11 @@
 ### 2.1 本机前台运行
 
 ```bash
-uv run grok-downloader auth check --account demo
-uv run grok-downloader sync --account demo --full --download-concurrency 8
-uv run grok-downloader verify --account demo
-GROK_DOWNLOADER_WEB_TOKEN='replace-with-long-random-token' \
-  uv run grok-downloader web --account demo --host 127.0.0.1 --port 7860
+uv run grok-imagine-archive auth check --account demo
+uv run grok-imagine-archive sync --account demo --full --download-concurrency 8
+uv run grok-imagine-archive verify --account demo
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN='replace-with-long-random-token' \
+  uv run grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860
 ```
 
 这套流程适合第一次接入或人工值守。
@@ -42,8 +42,8 @@ python - <<'PY' > archive/accounts/demo/web-token.txt
 import secrets
 print(secrets.token_urlsafe(32))
 PY
-GROK_DOWNLOADER_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
-  setsid -f sh -c 'cd /path/to/grok-downloader && exec .venv/bin/grok-downloader web --account demo --host 127.0.0.1 --port 7860 > archive/accounts/demo/logs/web.log 2>&1 < /dev/null'
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
+  setsid -f sh -c 'cd /path/to/grok-imagine-archive && exec .venv/bin/grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860 > archive/accounts/demo/logs/web.log 2>&1 < /dev/null'
 ```
 
 说明：
@@ -59,8 +59,8 @@ GROK_DOWNLOADER_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
 最小检查集：
 
 ```bash
-uv run grok-downloader status --account demo
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive status --account demo
+uv run grok-imagine-archive verify --account demo
 ```
 
 健康标准：
@@ -74,7 +74,7 @@ uv run grok-downloader verify --account demo
 
 ```bash
 curl http://127.0.0.1:7860/healthz
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" http://127.0.0.1:7860/api/status
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" http://127.0.0.1:7860/api/status
 ```
 
 判断原则：
@@ -108,7 +108,7 @@ curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" http://127.0.0.1:7860/api/s
 
 当绑定到非 loopback 地址，例如 `0.0.0.0`，必须显式提供：
 
-- `GROK_DOWNLOADER_WEB_TOKEN`
+- `GROK_IMAGINE_ARCHIVE_WEB_TOKEN`
 
 除非你非常确定环境隔离无风险，否则不要使用 `--allow-unauthenticated`。
 
@@ -125,14 +125,14 @@ http://127.0.0.1:7860/?token=你的访问令牌
 ### 4.3 API 访问方式
 
 ```bash
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   http://127.0.0.1:7860/api/status
 ```
 
 或者：
 
 ```bash
-curl "http://127.0.0.1:7860/?token=$GROK_DOWNLOADER_WEB_TOKEN"
+curl "http://127.0.0.1:7860/?token=$GROK_IMAGINE_ARCHIVE_WEB_TOKEN"
 ```
 
 ## 5. Docker 运行
@@ -147,13 +147,13 @@ docker compose up --build
 ### 5.2 单次命令方式
 
 ```bash
-docker build -t grok-downloader:local .
+docker build -t grok-imagine-archive:local .
 docker run --rm \
   -v "$PWD/archive:/data/archive" \
   -v "$PWD/config:/app/config:ro" \
-  -e GROK_DOWNLOADER_ARCHIVE=/data/archive \
-  grok-downloader:local \
-  grok-downloader status --account demo
+  -e GROK_IMAGINE_ARCHIVE_ROOT=/data/archive \
+  grok-imagine-archive:local \
+  grok-imagine-archive status --account demo
 ```
 
 运维原则：
@@ -167,9 +167,9 @@ docker run --rm \
 如果这是一个长期运行的归档环境，建议定期执行：
 
 ```bash
-uv run grok-downloader sync --account demo --full --download-concurrency 8
-uv run grok-downloader verify --account demo
-uv run grok-downloader status --account demo --json
+uv run grok-imagine-archive sync --account demo --full --download-concurrency 8
+uv run grok-imagine-archive verify --account demo
+uv run grok-imagine-archive status --account demo --json
 ```
 
 建议关注这些指标的变化：
@@ -227,8 +227,8 @@ Cloudflare 挑战页拦截。需要刷新浏览器会话，把新的 `cf_clearan
 处理：
 
 ```bash
-uv run grok-downloader download --account demo --concurrency 8
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive download --account demo --concurrency 8
+uv run grok-imagine-archive verify --account demo
 ```
 
 如果仍失败，检查：

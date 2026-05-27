@@ -4,7 +4,7 @@
 
 ## 1. Positioning
 
-`grok-downloader` is not a "save the webpage" script. It is a personal archive
+`grok-imagine-archive` is not a "save the webpage" script. It is a personal archive
 tool for Grok Imagine assets.
 
 It focuses on two problems:

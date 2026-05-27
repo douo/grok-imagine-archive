@@ -157,7 +157,7 @@ wheels = [
 ]
 
 [[package]]
-name = "grok-downloader"
+name = "grok-imagine-archive"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

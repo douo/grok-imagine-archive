@@ -18,7 +18,7 @@ def create_app(
     aliases: list[str] | tuple[str, ...] | None = None,
 ) -> FastAPI:
     account_aliases = normalize_aliases(alias, aliases)
-    app = FastAPI(title=f"Grok Downloader - {alias}")
+    app = FastAPI(title=f"Grok Imagine Archive - {alias}")
 
     @app.middleware("http")
     async def authenticate(request: Request, call_next):
@@ -32,7 +32,7 @@ def create_app(
         response = await call_next(request)
         if request.query_params.get("token") == access_token:
             response.set_cookie(
-                "grok_downloader_token",
+                "grok_imagine_archive_token",
                 access_token,
                 httponly=True,
                 samesite="lax",
@@ -429,7 +429,7 @@ def extract_access_token(request: Request) -> str:
     query_token = request.query_params.get("token", "")
     if query_token:
         return query_token
-    return request.cookies.get("grok_downloader_token", "")
+    return request.cookies.get("grok_imagine_archive_token", "")
 
 
 def resolve_media_path(root: Path, path: str) -> Path:
@@ -506,7 +506,7 @@ INDEX_HTML = """
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Grok Downloader - __ALIAS__</title>
+  <title>Grok Imagine Archive - __ALIAS__</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">

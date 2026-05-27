@@ -40,7 +40,7 @@ proxy = ""
 ### 步骤 1：验证账号是否可用
 
 ```bash
-uv run grok-downloader auth check --account demo
+uv run grok-imagine-archive auth check --account demo
 ```
 
 预期输出示例：
@@ -54,7 +54,7 @@ auth ok: account=demo folders=2
 ### 步骤 2：先小规模试跑
 
 ```bash
-uv run grok-downloader sync --account demo --limit 20
+uv run grok-imagine-archive sync --account demo --limit 20
 ```
 
 预期输出示例：
@@ -71,7 +71,7 @@ sync done: account=demo pages=1 folders=2 posts=18 assets=27 downloaded=27 error
 ### 步骤 3：做一次校验
 
 ```bash
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive verify --account demo
 ```
 
 预期输出示例：
@@ -83,7 +83,7 @@ verify: account=demo posts=18 images=10 videos=4 thumbnails=4 downloaded=18 fail
 ## 3. 全量同步示例
 
 ```bash
-uv run grok-downloader sync --account demo --full --download-concurrency 8
+uv run grok-imagine-archive sync --account demo --full --download-concurrency 8
 ```
 
 典型输出：
@@ -108,8 +108,8 @@ sync done: account=demo pages=12 folders=3 posts=420 assets=618 downloaded=74 er
 同步完成后马上跑：
 
 ```bash
-uv run grok-downloader status --account demo
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive status --account demo
+uv run grok-imagine-archive verify --account demo
 ```
 
 ## 4. 断点恢复示例
@@ -119,14 +119,14 @@ uv run grok-downloader verify --account demo
 先看状态：
 
 ```bash
-uv run grok-downloader status --account demo
+uv run grok-imagine-archive status --account demo
 ```
 
 如果有缺失或失败，再补下载：
 
 ```bash
-uv run grok-downloader download --account demo --concurrency 8
-uv run grok-downloader verify --account demo
+uv run grok-imagine-archive download --account demo --concurrency 8
+uv run grok-imagine-archive verify --account demo
 ```
 
 典型输出：
@@ -147,7 +147,7 @@ download done: account=demo total=12 downloaded=10 already_present=1 failed=1
 ## 5. 查看 JSON 形式状态
 
 ```bash
-uv run grok-downloader status --account demo --json
+uv run grok-imagine-archive status --account demo --json
 ```
 
 适合脚本消费的场景包括：
@@ -172,8 +172,8 @@ uv run grok-downloader status --account demo --json
 ### 前台启动
 
 ```bash
-GROK_DOWNLOADER_WEB_TOKEN='replace-with-long-random-token' \
-  uv run grok-downloader web --account demo --host 127.0.0.1 --port 7860
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN='replace-with-long-random-token' \
+  uv run grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860
 ```
 
 控制台会输出：
@@ -196,8 +196,8 @@ python - <<'PY' > archive/accounts/demo/web-token.txt
 import secrets
 print(secrets.token_urlsafe(32))
 PY
-GROK_DOWNLOADER_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
-  setsid -f sh -c 'cd /path/to/grok-downloader && exec .venv/bin/grok-downloader web --account demo --host 127.0.0.1 --port 7860 > archive/accounts/demo/logs/web.log 2>&1 < /dev/null'
+GROK_IMAGINE_ARCHIVE_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
+  setsid -f sh -c 'cd /path/to/grok-imagine-archive && exec .venv/bin/grok-imagine-archive web --account demo --host 127.0.0.1 --port 7860 > archive/accounts/demo/logs/web.log 2>&1 < /dev/null'
 ```
 
 浏览器访问方式：
@@ -231,14 +231,14 @@ http://127.0.0.1:7860/?token=web-token.txt 里的值
 ### 查询状态
 
 ```bash
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   http://127.0.0.1:7860/api/status
 ```
 
 ### 查询列表
 
 ```bash
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   "http://127.0.0.1:7860/api/posts?media=MEDIA_POST_TYPE_VIDEO&limit=5"
 ```
 
@@ -265,7 +265,7 @@ curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
 ### 查询详情
 
 ```bash
-curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   http://127.0.0.1:7860/api/posts/<post_id>
 ```
 
@@ -281,7 +281,7 @@ curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
 构建镜像：
 
 ```bash
-docker build -t grok-downloader:local .
+docker build -t grok-imagine-archive:local .
 ```
 
 挂载本地归档和配置后查看状态：
@@ -290,9 +290,9 @@ docker build -t grok-downloader:local .
 docker run --rm \
   -v "$PWD/archive:/data/archive" \
   -v "$PWD/config:/app/config:ro" \
-  -e GROK_DOWNLOADER_ARCHIVE=/data/archive \
-  grok-downloader:local \
-  grok-downloader status --account demo
+  -e GROK_IMAGINE_ARCHIVE_ROOT=/data/archive \
+  grok-imagine-archive:local \
+  grok-imagine-archive status --account demo
 ```
 
 适用场景：
