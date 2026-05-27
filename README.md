@@ -1,81 +1,109 @@
 # Grok Downloader
 
-`grok-downloader` 是一个面向 Grok Imagine Saved/Liked 资产的本地归档工具。它通过官方 Web 接口背后的 JSON API 做只读同步，把账号当前可枚举到的图片、视频、缩略图、提示词、原始 JSON、文件夹关系和派生关系完整保存到本地，并提供一个可离线浏览归档内容的 Web UI。
+**English** | [简体中文](docs/zh-CN/README.md)
 
-这个项目不是一次性的脚本，而是一个长期可维护的归档系统：
+`grok-downloader` is a local archive tool for Grok Imagine Saved/Liked assets. It
+uses the JSON APIs behind the official Web interface in read-only mode, then
+stores every enumerable image, video, thumbnail, prompt, raw JSON payload, folder
+relationship, and derivation relationship in a local archive. It also includes a
+read-only Web UI for browsing the archive offline.
 
-- 远端枚举使用 cursor 分页，不依赖浏览器首屏 DOM，也不会被 Saved 页面滚动懒加载误导。
-- 本地存储使用 SQLite + 文件归档，支持状态追踪、失败重试、哈希校验和只读浏览。
-- 每个账号完全隔离，适合长期增量同步，而不是仅导出一次后丢弃。
+This project is designed as a maintainable archive system, not a one-off export
+script:
 
-## 文档导航
+- Remote enumeration uses cursor pagination instead of first-screen DOM state, so
+  it is not misled by lazy loading in the Saved page.
+- Local storage uses SQLite plus a file archive, with state tracking, retry
+  support, hash verification, and read-only browsing.
+- Each account is isolated, which makes the tool suitable for long-running
+  incremental syncs rather than a disposable one-time dump.
 
-如果你后续很久不接触这个项目，只想快速恢复理解，按下面顺序看：
+## Screenshots
 
-1. [产品与使用总览](#产品与使用总览)
-2. [docs/product-design.md](docs/product-design.md)
-3. [docs/architecture.md](docs/architecture.md)
-4. [docs/examples.md](docs/examples.md)
-5. [docs/operations.md](docs/operations.md)
+The screenshots below are generated from mock data, not from a real Grok account
+or private archive.
 
-## 产品与使用总览
+![Mock Web archive grid](docs/assets/web-grid.png)
 
-### 解决什么问题
+![Mock post detail dialog](docs/assets/web-detail.png)
 
-Grok Imagine 的 Saved 页面是滚动懒加载的，账号资源多时，靠浏览器滚动截图或手工另存基本不可控，也无法稳定保留：
+## Documentation
 
-- 原图、缩略图、视频等不同形态的媒体文件
-- prompt、originalPrompt、模型名、分辨率等元数据
-- 某个 post 与 folder 的归属关系
-- 派生链路，比如原始 post、子 post、输入素材之间的关系
-- 某次归档是否完整、哪些文件失败、是否能安全重试
+If you are returning to this project after a long break, read these in order:
 
-`grok-downloader` 的目标就是把这些内容变成一个可以反复同步、可以核验、可以浏览的本地资产库。
+1. [Product And Usage Overview](#product-and-usage-overview)
+2. [Product Design](docs/product-design.md)
+3. [Architecture](docs/architecture.md)
+4. [Examples](docs/examples.md)
+5. [Operations](docs/operations.md)
 
-### 核心能力
+## Product And Usage Overview
+
+### What Problem It Solves
+
+The Grok Imagine Saved page is lazy-loaded. When an account has many assets,
+browser scrolling, screenshots, or manual saving are hard to control and do not
+reliably preserve:
+
+- original media, thumbnails, videos, and other media variants
+- `prompt`, `originalPrompt`, model name, resolution, and related metadata
+- the relationship between posts and folders
+- derivation chains such as original posts, child posts, and input media
+- whether an archive run is complete, which files failed, and whether retrying is
+  safe
+
+`grok-downloader` turns those remote assets into a local library that can be
+resynced, verified, and browsed.
+
+### Core Commands
 
 - `auth check`
-  检查本地账号配置是否还能访问 Grok API。
+  Checks whether the local account configuration can still access the Grok API.
 - `sync`
-  枚举远端列表、写入 posts/assets/folders/edges，并按需下载媒体。
+  Enumerates remote lists, writes posts/assets/folders/edges, and optionally
+  downloads media.
 - `download`
-  仅处理 SQLite 中仍处于 `pending` 或 `failed` 的资产，不重新跑远端枚举。
+  Downloads only assets that are still `pending` or `failed` in SQLite, without
+  re-enumerating remote lists.
 - `status`
-  输出账号当前归档规模和最近一次同步状态。
+  Prints the current archive size and the latest sync status for an account.
 - `verify`
-  对已下载文件重新计算哈希和大小，确认归档是否一致。
+  Recomputes file hashes and sizes to verify archive consistency.
 - `web`
-  在本地启动只读 Web UI，浏览归档内容。
+  Starts a local read-only Web UI for browsing archived content.
 
-### 全量同步语义
+### Full Sync Semantics
 
-`sync --full` 的行为不是“抓一页页面”，而是：
+`sync --full` does not mean "capture one rendered page." It means:
 
-1. 调 `/rest/media/folder/list`
-2. 调 `/rest/media/post/list` 枚举 liked/saved 主列表，直到 `nextCursor == ""`
-3. 对每个 folder 再次跑 `/rest/media/post/list` 的 folder 维度分页
-4. 对每个 post 递归提取：
-   `images`、`videos`、`childPosts`、`inputMediaItems`、`thumbnailImageUrl` 以及嵌套对象中的源地址
-5. 对已知 post 调 `/rest/media/post/folders` 保存 folder 关系
-6. 下载全部待处理媒体并写入哈希、大小、重试状态
+1. call `/rest/media/folder/list`
+2. call `/rest/media/post/list` for the liked/saved root list until
+   `nextCursor == ""`
+3. call `/rest/media/post/list` again for each folder until every folder cursor
+   is exhausted
+4. recursively extract assets from `images`, `videos`, `childPosts`,
+   `inputMediaItems`, `thumbnailImageUrl`, and nested source URL fields
+5. call `/rest/media/post/folders` for known posts and save folder membership
+6. download all pending media and record hash, size, retry state, and failures
 
-这意味着它解决的是 API 层面的“完整枚举”问题，而不是前端渲染层面的“滚动到最底”问题。
+This solves the API-level completeness problem rather than the frontend
+"scroll to the bottom" problem.
 
-## 快速开始
+## Quick Start
 
-### 1. 准备配置
+### 1. Prepare Configuration
 
-复制示例配置：
+Copy the example config:
 
 ```bash
 cp config/accounts.example.toml config/accounts.toml
 ```
 
-最小配置示例：
+Minimal config example:
 
 ```toml
 [[accounts]]
-alias = "andy"
+alias = "demo"
 enabled = true
 sso = "..."
 cf_clearance = "..."
@@ -84,51 +112,51 @@ browser = "chrome136"
 proxy = ""
 ```
 
-说明：
+Notes:
 
-- `config/accounts.toml`、`samples/`、`archive/` 都被 `.gitignore` 忽略
-- 不要把 cookie、token、HAR 样本提交到仓库或贴到日志
-- 可以通过环境变量覆盖路径：
+- `config/accounts.toml`, `samples/`, and `archive/` are ignored by git.
+- Never commit cookies, tokens, or HAR samples, and never paste them into logs.
+- You can override the default paths with environment variables:
 
 ```bash
 export GROK_DOWNLOADER_CONFIG=/secure/accounts.toml
 export GROK_DOWNLOADER_ARCHIVE=/data/grok-archive
 ```
 
-### 2. 先跑连通性检查
+### 2. Check Connectivity
 
 ```bash
-uv run grok-downloader auth check --account andy
+uv run grok-downloader auth check --account demo
 ```
 
-### 3. 小批量验证
+### 3. Run A Small Trial Sync
 
 ```bash
-uv run grok-downloader sync --account andy --limit 20
-uv run grok-downloader verify --account andy
+uv run grok-downloader sync --account demo --limit 20
+uv run grok-downloader verify --account demo
 ```
 
-### 4. 正式全量同步
+### 4. Run The Full Sync
 
 ```bash
-uv run grok-downloader sync --account andy --full --download-concurrency 8
-uv run grok-downloader verify --account andy
+uv run grok-downloader sync --account demo --full --download-concurrency 8
+uv run grok-downloader verify --account demo
 ```
 
-### 5. 浏览归档
+### 5. Browse The Archive
 
 ```bash
 GROK_DOWNLOADER_WEB_TOKEN='replace-with-long-random-token' \
-  uv run grok-downloader web --account andy --host 127.0.0.1 --port 7860
+  uv run grok-downloader web --account demo --host 127.0.0.1 --port 7860
 ```
 
-浏览器首次访问：
+First browser visit:
 
 ```text
-http://127.0.0.1:7860/?token=你的访问令牌
+http://127.0.0.1:7860/?token=your-access-token
 ```
 
-## 本地归档结构
+## Local Archive Layout
 
 ```text
 archive/accounts/{alias}/
@@ -142,84 +170,89 @@ archive/accounts/{alias}/
   logs/
 ```
 
-目录说明：
+Directory roles:
 
 - `index.sqlite`
-  结构化索引，记录 posts、assets、folders、post_edges、sync_runs 等信息
-- `media/images/`、`media/videos/`
-  已下载的主媒体文件
+  Structured index for posts, assets, folders, post edges, and sync runs.
+- `media/images/`, `media/videos/`
+  Downloaded primary media files.
 - `thumbs/`
-  缩略图和预览图
+  Thumbnails and preview images.
 - `metadata/posts/`
-  单个 post 的原始 JSON 快照
+  Raw JSON snapshots for individual posts.
 - `metadata/pages/`
-  每一页 API 响应的原始 JSON，用于审计和回放
+  Raw JSON API page responses for audit and replay.
 - `metadata/failures/`
-  失败清单和辅助排障文件
+  Failure manifests and troubleshooting artifacts.
 - `logs/`
-  本地后台 Web 进程等运行日志
+  Local runtime logs such as background Web UI logs.
 
-## 代码结构
+## Code Layout
 
-主要实现集中在 `src/grok_downloader/`：
+Most implementation lives in `src/grok_downloader/`:
 
 - `cli.py`
-  命令入口和参数解析
+  Command entry points and argument parsing.
 - `client.py`
-  Grok API 客户端，请求头和浏览器指纹兼容逻辑
+  Grok API client, request headers, cookies, and browser impersonation.
 - `sync.py`
-  全量/增量同步编排
+  Full and limited sync orchestration.
 - `extract.py`
-  post 递归遍历和资产 URL 提取
+  Recursive post traversal and asset URL extraction.
 - `archive.py`
-  SQLite 模式、文件落盘、下载状态管理
+  SQLite schema, file persistence, and download state.
 - `download.py`
-  并发下载待处理资产
+  Concurrent pending-asset downloader.
 - `verify.py`
-  哈希复算和完整性检查
+  Hash recalculation and archive integrity checks.
 - `web.py`
-  只读 Web API 和单页浏览界面
+  Read-only Web API and single-page browser UI.
 
-更详细的模块职责、数据流和表设计见 [docs/architecture.md](docs/architecture.md)。
+See [Architecture](docs/architecture.md) for the module responsibilities, data
+flow, and table design.
 
-## 健康标准
+## Health Criteria
 
-一次归档完成后，至少应满足：
+After an archive run, the minimum healthy state is:
 
-- `status` 中 `failed=0`
-- `status` 中 `missing=0`
-- `verify` 中 `hash_mismatches=0`
-- `sync_runs.latest.status` 为 `ok` 或可解释的 `partial`
+- `status` reports `failed=0`
+- `status` reports `missing=0`
+- `verify` reports `hash_mismatches=0`
+- the latest `sync_runs.status` is `ok`, or a `partial` state that you can
+  explain
 
-常用检查：
-
-```bash
-uv run grok-downloader status --account andy
-uv run grok-downloader verify --account andy
-```
-
-如果出现短暂下载失败：
+Common checks:
 
 ```bash
-uv run grok-downloader download --account andy --concurrency 8
-uv run grok-downloader verify --account andy
+uv run grok-downloader status --account demo
+uv run grok-downloader verify --account demo
 ```
 
-## 安全边界
+If a temporary download failure occurs:
 
-- 该工具对 Grok 是只读的，不删除也不修改云端资源
-- 同一账号的 `sync`/`download` 会加写锁，避免并发写坏归档
-- Web UI 打开 SQLite 时使用只读模式
-- 媒体文件访问被限制在账号归档目录内部，避免目录穿越
-- 归档中可能包含私密媒体、prompt 和历史输入素材，应视为敏感数据
+```bash
+uv run grok-downloader download --account demo --concurrency 8
+uv run grok-downloader verify --account demo
+```
 
-## 进一步阅读
+## Safety Boundaries
 
-- [docs/product-design.md](docs/product-design.md)
-  看产品目标、用户场景、交互设计和取舍
-- [docs/architecture.md](docs/architecture.md)
-  看技术架构、数据模型、关键流程和扩展点
-- [docs/examples.md](docs/examples.md)
-  看实际命令样例、返回结果和常见工作流
-- [docs/operations.md](docs/operations.md)
-  看运维、部署、巡检和故障处理
+- The tool is read-only against Grok. It does not delete or mutate cloud assets.
+- `sync` and `download` use an account-scoped write lock to avoid corrupting an
+  archive with concurrent writers.
+- The Web UI opens SQLite in read-only mode.
+- Media file access is constrained to the account archive directory to prevent
+  path traversal.
+- The archive may contain private media, prompts, and input assets; treat it as
+  sensitive data.
+
+## Further Reading
+
+- [Product Design](docs/product-design.md)
+  Product goals, user scenarios, interaction design, and tradeoffs.
+- [Architecture](docs/architecture.md)
+  Technical architecture, data model, key flows, and extension points.
+- [Examples](docs/examples.md)
+  Command examples, output examples, and common workflows.
+- [Operations](docs/operations.md)
+  Operations, deployment, health checks, and troubleshooting.

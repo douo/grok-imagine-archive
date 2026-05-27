@@ -1,19 +1,22 @@
-# 技术架构
+# Architecture
 
-## 1. 架构总览
+**English** | [简体中文](zh-CN/architecture.md)
 
-`grok-downloader` 可以拆成四层：
+## 1. Overview
 
-1. 接入层
-   CLI 和 Web UI，负责触发操作和展示结果
-2. 编排层
-   `sync`、`download`、`verify` 等流程控制
-3. 领域层
-   post/asset/folder/edge 的提取、索引和状态管理
-4. 基础设施层
-   Grok API 请求、SQLite、本地文件系统、进程锁
+`grok-downloader` can be viewed as four layers:
 
-用文字表示数据流：
+1. Access layer
+   CLI and Web UI, responsible for triggering actions and displaying results.
+2. Orchestration layer
+   `sync`, `download`, `verify`, and related workflows.
+3. Domain layer
+   Extraction, indexing, and state management for posts, assets, folders, and
+   edges.
+4. Infrastructure layer
+   Grok API requests, SQLite, local filesystem storage, and process locks.
+
+Data flow:
 
 ```text
 Grok API
@@ -22,23 +25,23 @@ Grok API
   -> extract.py
   -> archive.py(SQLite + files)
   -> verify.py / web.py / cli.py
-  -> 用户
+  -> user
 ```
 
-## 2. 模块划分
+## 2. Modules
 
-### 2.1 CLI 入口
+### 2.1 CLI Entry Point
 
-文件：`src/grok_downloader/cli.py`
+File: `src/grok_downloader/cli.py`
 
-职责：
+Responsibilities:
 
-- 解析命令行参数
-- 装配账号配置
-- 调用对应业务模块
-- 输出适合 shell 和运维脚本消费的摘要结果
+- parse command-line arguments
+- load account configuration
+- call the corresponding business module
+- print summaries suitable for shells and operational scripts
 
-命令与实现映射：
+Command mapping:
 
 - `auth check` -> `cmd_auth_check`
 - `sync` -> `cmd_sync`
@@ -47,128 +50,134 @@ Grok API
 - `verify` -> `cmd_verify`
 - `web` -> `cmd_web`
 
-### 2.2 API 客户端
+### 2.2 API Client
 
-文件：`src/grok_downloader/client.py`
+File: `src/grok_downloader/client.py`
 
-职责：
+Responsibilities:
 
-- 统一封装对 Grok API 的请求
-- 注入认证 cookie 和请求头
-- 处理浏览器版本 impersonation 的兼容降级
-- 提供 `folder_list`、`post_list`、`post_folders` 和媒体下载 `get`
+- wrap Grok API requests
+- inject authentication cookies and request headers
+- handle browser impersonation fallback behavior
+- provide `folder_list`, `post_list`, `post_folders`, and media download `get`
 
-关键点：
+Key points:
 
-- `post_list()` 使用 `source = MEDIA_POST_SOURCE_LIKED`
-- 列表枚举依赖 `cursor`
-- 媒体下载与 API JSON 请求共用认证上下文
+- `post_list()` uses `source = MEDIA_POST_SOURCE_LIKED`.
+- Listing enumeration is cursor-based.
+- Media downloads and API JSON requests share the same authentication context.
 
-### 2.3 同步编排
+### 2.3 Sync Orchestration
 
-文件：`src/grok_downloader/sync.py`
+File: `src/grok_downloader/sync.py`
 
-职责：
+Responsibilities:
 
-- 创建同步 run
-- 枚举主列表和 folder 列表
-- 对每个 post 写入本地索引
-- 调用提取器生成资产清单
-- 记录 folder 关系
-- 在需要时触发下载
+- create a sync run
+- enumerate the root list and folder-scoped lists
+- write each post to the local index
+- call the extractor to create asset records
+- record folder relationships
+- trigger downloads when requested
 
-`sync_account()` 的实际流程：
+Actual `sync_account()` flow:
 
-1. 获取写锁
-2. 打开归档和 API 客户端
-3. `folder_list`
-4. `consume_listing(scope="liked")`
-5. 若 `--full`，对每个 folder 再次 `consume_listing`
-6. 汇总待下载资产并下载
-7. 写入 `sync_runs`
+1. acquire the account write lock
+2. open the archive and API client
+3. call `folder_list`
+4. call `consume_listing(scope="liked")`
+5. if `--full` is set, call `consume_listing` for each folder
+6. summarize pending assets and download them
+7. update `sync_runs`
 
-### 2.4 资产提取
+### 2.4 Asset Extraction
 
-文件：`src/grok_downloader/extract.py`
+File: `src/grok_downloader/extract.py`
 
-职责：
+Responsibilities:
 
-- 遍历 post 及嵌套 post
-- 找出所有 URL 型资产字段
-- 基于字段名、媒体类型和 URL 推断 `role` 与 `kind`
-- 生成稳定 `asset_key`
+- traverse posts and nested posts
+- find URL-shaped asset fields
+- infer `role` and `kind` from field names, media types, and URLs
+- generate stable `asset_key` values
 
-关键策略：
+Key strategies:
 
-- `iter_posts()` 递归处理 `images`、`videos`、`childPosts`、`inputMediaItems`
-- `iter_url_fields()` 会继续扫描嵌套对象中的 `mediaUrl`、`thumbnailImageUrl`、`sourceUrl` 等字段
-- 通过 `asset_key_for(post_id, role, url)` 保证同一资产可幂等写入
+- `iter_posts()` recursively processes `images`, `videos`, `childPosts`, and
+  `inputMediaItems`.
+- `iter_url_fields()` scans nested objects for fields such as `mediaUrl`,
+  `thumbnailImageUrl`, and `sourceUrl`.
+- `asset_key_for(post_id, role, url)` makes repeated writes idempotent.
 
-### 2.5 归档存储
+### 2.5 Archive Storage
 
-文件：`src/grok_downloader/archive.py`
+File: `src/grok_downloader/archive.py`
 
-职责：
+Responsibilities:
 
-- 初始化目录结构
-- 管理 SQLite schema
-- 写入 post/folder/asset/edge/run 数据
-- 下载文件并维护其状态、大小、哈希、失败原因
-- 生成聚合状态供 CLI 和 Web 使用
+- initialize the archive directory tree
+- manage the SQLite schema
+- write post/folder/asset/edge/run data
+- download files and maintain their state, size, hash, and failure reason
+- provide aggregate status for the CLI and Web UI
 
-这是项目最核心的模块，因为它决定了“归档是否可持续维护”。
+This is the project's core module because it defines whether the archive can be
+maintained over time.
 
-### 2.6 下载器
+### 2.6 Downloader
 
-文件：`src/grok_downloader/download.py`
+File: `src/grok_downloader/download.py`
 
-职责：
+Responsibilities:
 
-- 查询 SQLite 中待处理资产
-- 启动多线程并发下载
-- 复用 `archive.download_asset()` 完成状态机更新
+- query pending assets from SQLite
+- run concurrent media downloads
+- reuse `archive.download_asset()` for state transitions
 
-设计特征：
+Design traits:
 
-- 下载和枚举解耦
-- 线程内各自打开独立的 `Archive` 和 `GrokClient`
-- 通过队列实现简单直接的并发模型
+- downloads are decoupled from remote enumeration
+- each worker thread opens its own `Archive` and `GrokClient`
+- concurrency is implemented with a simple queue-based worker model
 
-### 2.7 校验器
+### 2.7 Verifier
 
-文件：`src/grok_downloader/verify.py`
+File: `src/grok_downloader/verify.py`
 
-职责：
+Responsibilities:
 
-- 对所有 `status='downloaded'` 的资产重新计算哈希和大小
-- 找出缺失、损坏或元数据不一致的文件
-- 输出汇总结果
-- 当存在缺失项时，生成 `metadata/failures/missing-assets.tsv`
+- recompute hash and size for every `status='downloaded'` asset
+- detect missing, damaged, or inconsistent files
+- return a summary
+- generate `metadata/failures/missing-assets.tsv` when missing files exist
 
 ### 2.8 Web UI
 
-文件：`src/grok_downloader/web.py`
+File: `src/grok_downloader/web.py`
 
-职责：
+Responsibilities:
 
-- 提供只读 HTTP API
-- 服务媒体文件
-- 渲染一个无构建步骤的浏览页面
+- provide a read-only HTTP API
+- serve archived media files
+- render a no-build single-page browser UI
 
-设计约束：
+Design constraints:
 
-- SQLite 只读打开
-- token 中间件可选
-- 媒体路径必须位于归档根目录之下
-- 前端渲染机制：支持图片/视频宽高 `aspect-ratio` 预占位（无布局抖动），并结合 `IntersectionObserver` 实现自动滚动加载（无手动 Load More 按钮）。加载过程中提供骨架屏占位与平滑淡入动画效果。
+- SQLite is opened read-only.
+- Token middleware is optional for loopback use and required for unsafe public
+  binding unless explicitly bypassed.
+- Media paths must resolve inside the account archive root.
+- The frontend reserves image/video space with `aspect-ratio`, uses
+  `IntersectionObserver` for automatic pagination, and shows skeleton
+  placeholders with smooth fade-in.
 
-## 3. 数据模型
+## 3. Data Model
 
 ### 3.1 `posts`
 
-一条 Grok Imagine 记录的主表。
+Main table for Grok Imagine records.
 
-关键字段：
+Important fields:
 
 - `id`
 - `create_time`
@@ -184,9 +193,9 @@ Grok API
 
 ### 3.2 `assets`
 
-每个 post 的实际下载对象。
+Downloadable objects associated with posts.
 
-关键字段：
+Important fields:
 
 - `asset_key`
 - `post_id`
@@ -201,7 +210,7 @@ Grok API
 - `fail_reason`
 - `retry_count`
 
-常见组合：
+Common combinations:
 
 - `image/media`
 - `video/media`
@@ -210,34 +219,39 @@ Grok API
 
 ### 3.3 `folders`
 
-远端 folder 的本地快照。
+Local snapshots of remote folders.
 
 ### 3.4 `post_folders`
 
-post 与 folder 的多对多关系表。
+Many-to-many relationships between posts and folders.
 
 ### 3.5 `post_edges`
 
-记录 post 之间的依赖关系。
+Relationships between posts.
 
-当前关系类型：
+Current relationship types:
 
 - `original`
-  Grok API 字段 `originalPostId` 表示的来源/派生关系。UI 中显示为 `Original parent`，用于回答“这条 post 是从哪条原始 post 派生出来的”。
+  The source or derivation relationship represented by Grok API
+  `originalPostId`. The UI displays it as `Original parent`, which answers
+  "which original post was this derived from?"
 - `nested`
-  本地提取器在 `images`、`videos`、`childPosts`、`inputMediaItems` 等嵌套列表里发现 post 时记录的包含关系。UI 中显示为 `Nested parent` 和 `Child posts`，用于回答“这条 post 是在哪条 post 的嵌套结构里出现的”。
+  A containment relationship found by the local extractor inside `images`,
+  `videos`, `childPosts`, `inputMediaItems`, and similar nested lists. The UI
+  displays it as `Nested parent` and `Child posts`, which answers "where did
+  this post appear as nested data?"
 
 ### 3.6 `sync_runs`
 
-记录每次同步任务的审计信息：
-n
-- 模式：`full` 或 `limited`
-- 开始/结束时间
-- 看到了多少 posts/assets
-- 错误数
-- 最终状态：`running` / `ok` / `partial` / `failed`
+Audit records for sync tasks:
 
-## 4. 目录结构设计
+- mode: `full` or `limited`
+- start and finish time
+- number of posts and assets observed
+- error count
+- final status: `running`, `ok`, `partial`, or `failed`
+
+## 4. Directory Layout
 
 ```text
 archive/accounts/{alias}/
@@ -250,60 +264,64 @@ archive/accounts/{alias}/
   metadata/failures/
 ```
 
-为什么这样设计：
+Why this layout:
 
-- 文件和索引分离，避免只靠目录名猜语义
-- 原始页面响应和结构化结果并存，既能查问题，也能直接使用
-- 每账号单独目录，降低串号和误删风险
+- Files and indexes are separate, so behavior is not inferred from filenames
+  alone.
+- Raw page responses and structured records coexist for audit and direct use.
+- Each account has its own directory, reducing cross-account mistakes and
+  accidental deletion risk.
 
-## 5. 关键流程
+## 5. Key Flows
 
-### 5.1 全量同步流程
+### 5.1 Full Sync Flow
 
 ```text
 sync --full
-  -> 获取账号锁
-  -> 拉 folder 列表
-  -> 拉 liked 主列表直到 nextCursor 为空
-  -> 拉每个 folder 的分页列表直到 nextCursor 为空
-  -> 递归写入 posts 和 post_edges
-  -> 提取 assets
-  -> 保存 post_folders
-  -> 下载 pending/failed 资产
-  -> 结束 sync_run
+  -> acquire account lock
+  -> fetch folder list
+  -> fetch liked root list until nextCursor is empty
+  -> fetch every folder list until nextCursor is empty
+  -> recursively write posts and post_edges
+  -> extract assets
+  -> save post_folders
+  -> download pending/failed assets
+  -> finish sync_run
 ```
 
-说明：
+Notes:
 
-- `posts_seen` 统计的是遍历过程中见到的 post 次数，可能大于 `posts` 表最终唯一行数
-- `assets_seen` 也是枚举总量，不等于最终去重后 `assets` 行数
+- `posts_seen` counts every post encountered while traversing lists, so it can
+  be larger than the final unique row count in `posts`.
+- `assets_seen` is also an enumeration count, not the final deduplicated
+  `assets` row count.
 
-### 5.2 下载流程
+### 5.2 Download Flow
 
 ```text
 download
-  -> 查询 assets 中 pending / failed
-  -> 多线程并发下载
-  -> 落临时文件
-  -> 计算 sha256 和大小
-  -> 原子移动到目标路径
-  -> 更新状态 downloaded / failed
+  -> query pending / failed assets
+  -> download concurrently
+  -> write a temporary file
+  -> compute sha256 and size
+  -> atomically move the file into place
+  -> update status to downloaded / failed
 ```
 
-这个流程允许你在不重新枚举远端列表的情况下单独补齐媒体。
+This allows media completion without re-enumerating remote lists.
 
-### 5.3 校验流程
+### 5.3 Verification Flow
 
 ```text
 verify
-  -> 扫描所有 downloaded 资产
-  -> 检查 local_path 是否存在
-  -> 重新计算 hash 和 size
-  -> 汇总 missing / failed / hash_mismatches
-  -> 生成缺失清单
+  -> scan all downloaded assets
+  -> check local_path existence
+  -> recompute hash and size
+  -> summarize missing / failed / hash_mismatches
+  -> generate a missing-assets manifest
 ```
 
-### 5.4 浏览流程
+### 5.4 Browsing Flow
 
 ```text
 browser
@@ -312,138 +330,150 @@ browser
   -> GET /media/{path}
 ```
 
-Web UI 不直接触发同步，也不写数据库。
+The Web UI never triggers sync and never writes to SQLite.
 
-## 6. 为什么不依赖浏览器滚动
+## 6. Why Browser Scrolling Is Not A Contract
 
-这是整个项目最重要的技术决策之一。
+This is one of the project's most important technical decisions.
 
-Saved 页面是典型的懒加载列表，UI 里的“滚动更多”只是前端消费分页数据的手段，不是后端数据边界本身。因此：
+The Saved page is a lazy-loaded list. "Scroll for more" is a frontend method for
+consuming paginated data, not a backend completeness boundary. Therefore:
 
-- DOM 中当前存在的卡片数量并不代表账号总资产数
-- 前端实现可能改版，但 cursor 分页的契约通常更直接
-- 使用 API 可以保留原始 JSON，便于审计和重新解释
+- the number of cards currently in the DOM is not the account's total asset
+  count
+- frontend behavior can change, while cursor pagination is a clearer contract
+- API enumeration can preserve raw JSON for audit and reinterpretation
 
-项目当前选择的是“以接口分页为准，以页面滚动行为为背景知识”，而不是“模拟网页滚动直到看起来到底了”。
+The project treats API pagination as authoritative and page scrolling as only
+background knowledge.
 
-## 7. 幂等性与恢复能力
+## 7. Idempotency And Recovery
 
-### 7.1 幂等写入
+### 7.1 Idempotent Writes
 
-- `posts.id` 是主键
-- `folders.id` 是主键
-- `assets.asset_key` 是主键
-- `post_folders` 和 `post_edges` 也使用稳定主键
+- `posts.id` is the primary key.
+- `folders.id` is the primary key.
+- `assets.asset_key` is the primary key.
+- `post_folders` and `post_edges` also use stable primary keys.
 
-这意味着多次跑 `sync --full` 不会无限膨胀，而是更新已有记录。
+This means repeated `sync --full` runs update existing records instead of
+expanding the archive indefinitely.
 
-### 7.2 下载恢复
+### 7.2 Download Recovery
 
-- 已成功下载的资产带有 `local_path`、`sha256`、`size`
-- 失败项保留 `fail_reason` 和 `retry_count`
-- `download` 可以在后续独立运行
+- Successfully downloaded assets have `local_path`, `sha256`, and `size`.
+- Failed items retain `fail_reason` and `retry_count`.
+- `download` can be run independently later.
 
-### 7.3 同步恢复
+### 7.3 Sync Recovery
 
-如果 `sync` 中途失败：
+If `sync` fails partway through:
 
-- 已经成功写入的 post、asset、page JSON 仍会保留
-- `sync_runs` 会标为 `failed`
-- 重新运行可以继续补齐，而不必清库重来
+- already written posts, assets, and page JSON are kept
+- `sync_runs` is marked `failed`
+- rerunning sync can fill gaps without clearing the database
 
-## 8. 并发与一致性
+## 8. Concurrency And Consistency
 
-### 8.1 为什么要加写锁
+### 8.1 Why A Write Lock Exists
 
-两个 `sync` 或 `download` 同时写同一账号的 SQLite 和文件树，风险很高：
+Two `sync` or `download` processes writing the same account's SQLite database and
+file tree would be risky:
 
-- 竞争写入同一资产
-- 状态覆盖
-- 临时文件冲突
+- they may compete to write the same asset
+- state updates can overwrite each other
+- temporary files can collide
 
-因此系统以账号为粒度加 `.write.lock`。
+The system therefore uses an account-scoped `.write.lock`.
 
-### 8.2 为什么 Web 只读
+### 8.2 Why The Web UI Is Read-Only
 
-Web UI 只消费归档，不参与写入，带来的收益是：
+The Web UI only consumes archive data. Benefits:
 
-- 浏览和同步隔离
-- 数据库权限模型简单
-- 部署时更容易控制安全边界
+- browsing and sync stay isolated
+- database permissions are simple
+- deployment boundaries are easier to reason about
 
-## 9. 安全设计
+## 9. Security Design
 
-### 9.1 认证信息
+### 9.1 Credentials
 
-认证信息只从 `config/accounts.toml` 读取，不写入归档数据库。
+Credentials are read from `config/accounts.toml` and are not written into the
+archive database.
 
-### 9.2 Web 访问令牌
+### 9.2 Web Access Token
 
-当 Web UI 暴露到非 loopback 地址时，要求显式提供 token，避免局域网裸奔。
+When the Web UI binds to a non-loopback address, an explicit token is required
+unless the operator opts into unauthenticated access.
 
-### 9.3 媒体文件访问约束
+### 9.3 Media Path Constraint
 
-`/media/{path}` 会把请求路径解析到账号归档根目录下，并拒绝目录穿越。
+`/media/{path}` resolves requested paths inside the account archive root and
+rejects path traversal.
 
-### 9.4 敏感数据隔离
+### 9.4 Sensitive Data Isolation
 
-以下内容被明确视为敏感：
+These paths are sensitive:
 
 - `config/accounts.toml`
 - `archive/`
 - `samples/`
 
-这些都不应进入版本库或公开日志。
+They must not enter the public repository or public logs.
 
-## 10. 测试策略
+## 10. Test Strategy
 
-现有测试覆盖的重点是“高风险基础行为”，包括：
+Existing tests cover high-risk foundation behavior:
 
-- 配置解析
-- API 客户端兼容逻辑
-- 资产提取
-- HAR 契约样本
-- 归档状态和只读访问
-- Web 路由鉴权和路径安全
+- config parsing
+- API client compatibility behavior
+- asset extraction
+- HAR contract samples
+- archive status and read-only access
+- Web route authentication and path safety
 
-建议继续保持这种策略：先保核心语义，再补边缘交互。
+The preferred strategy is to protect core semantics first, then add edge
+interaction coverage as the surface grows.
 
-## 11. 技术取舍
+## 11. Tradeoffs
 
-### 11.1 为什么用 SQLite
+### 11.1 Why SQLite
 
-因为需求是单机、单用户、本地归档优先。SQLite 的优势正好匹配：
+The project is local-first, single-machine, and usually single-user. SQLite fits
+that profile:
 
-- 零部署
-- 查询能力足够
-- 易于备份和迁移
-- 适合作为归档索引，而不是高并发在线交易数据库
+- zero deployment
+- enough query power
+- easy backup and migration
+- suitable as an archive index rather than a high-concurrency transaction system
 
-### 11.2 为什么 Web UI 直接嵌在 FastAPI 里
+### 11.2 Why The Web UI Is Embedded In FastAPI
 
-当前 Web UI 的作用是浏览归档，不是复杂前端应用。把 HTML 直接内嵌：
+The Web UI exists to browse an archive, not to be a complex frontend
+application. Embedding the HTML keeps:
 
-- 依赖更少
-- 部署更简单
-- 不需要额外构建链路
+- dependencies low
+- deployment simple
+- build tooling unnecessary
 
-### 11.3 为什么下载器用线程而不是异步
+### 11.3 Why Threads Instead Of Async For Downloads
 
-下载场景以 I/O 为主，线程模型已经足够直接，而且与现有同步、SQLite 和请求库整合成本更低。
+Media download work is mostly I/O. Threads are direct, sufficient, and integrate
+well with the current sync code, SQLite usage, and request library.
 
-## 12. 扩展点
+## 12. Extension Points
 
-后续如果要继续演进，推荐优先从这些点扩展：
+Recommended areas for future evolution:
 
-- 在 `extract.py` 增加新的 URL 字段识别规则
-- 在 `archive.py` 增加更多聚合查询和报表接口
-- 在 `web.py` 增加更强的详情导航和筛选项
-- 在 `verify.py` 增加更细粒度的校验报告
+- add URL field recognition rules in `extract.py`
+- add more aggregate queries and reports in `archive.py`
+- add richer detail navigation and filters in `web.py`
+- add finer verification reports in `verify.py`
 
-不建议轻易动的点：
+Avoid changing these casually:
 
-- `assets` 主键策略
-- 归档目录层级
-- Web 只读模式
+- `assets` key strategy
+- archive directory hierarchy
+- read-only Web UI behavior
 
-这些属于系统稳定性的基础契约。
+Those are core stability contracts.

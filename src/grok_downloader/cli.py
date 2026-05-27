@@ -84,7 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def add_account_arg(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--account", default="andy")
+    parser.add_argument("--account", default="demo")
 
 
 def cmd_auth_check(args: argparse.Namespace) -> int:

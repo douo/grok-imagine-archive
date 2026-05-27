@@ -13,4 +13,4 @@ RUN pip install --no-cache-dir .
 VOLUME ["/data"]
 EXPOSE 7860
 
-CMD ["grok-downloader", "web", "--account", "andy", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["grok-downloader", "web", "--account", "demo", "--host", "0.0.0.0", "--port", "7860"]

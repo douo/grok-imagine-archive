@@ -1,5 +1,5 @@
 [[accounts]]
-alias = "andy"
+alias = "demo"
 enabled = true
 
 # Paste only into config/accounts.toml, never into this example file.

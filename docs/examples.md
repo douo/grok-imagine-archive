@@ -1,12 +1,16 @@
-# 使用示例
+# Examples
 
-这份文档不是 API 参考，而是“真实工作流示例”。如果你已经知道系统是什么，但忘了具体怎么用，先看这里最快。
+**English** | [简体中文](zh-CN/examples.md)
 
-## 1. 账号配置示例
+This document is not an API reference. It is a set of practical workflow
+examples. If you already understand what the system does but need to remember
+how to use it, start here.
+
+## 1. Account Configuration Example
 
 ```toml
 [[accounts]]
-alias = "andy"
+alias = "demo"
 enabled = true
 sso = "..."
 cf_clearance = "..."
@@ -16,145 +20,151 @@ browser = "chrome136"
 proxy = ""
 ```
 
-字段说明：
+Field notes:
 
 - `alias`
-  本地账号名，决定归档目录 `archive/accounts/{alias}/`
+  Local account name. It determines the archive directory
+  `archive/accounts/{alias}/`.
 - `sso`
-  必填认证字段
+  Required authentication field.
 - `cf_clearance`
-  Cloudflare 相关 cookie，某些环境需要
+  Cloudflare-related cookie, required in some environments.
 - `cf_cookies`
-  额外 cookie 串，按需使用
+  Additional cookie string for environments that need it.
 - `user_agent`
-  请求头中的浏览器 UA
+  Browser user agent sent in request headers.
 - `browser`
-  `curl-cffi` 的 impersonate 目标
+  `curl-cffi` impersonation target.
 - `proxy`
-  可选代理
+  Optional proxy.
 
-## 2. 第一次接入
+## 2. First-Time Setup
 
-### 步骤 1：验证账号是否可用
+### Step 1: Verify Account Access
 
 ```bash
-uv run grok-downloader auth check --account andy
+uv run grok-downloader auth check --account demo
 ```
 
-预期输出示例：
+Expected output:
 
 ```text
-auth ok: account=andy folders=2
+auth ok: account=demo folders=2
 ```
 
-如果这里失败，先不要继续跑全量同步。优先检查 cookie、UA 和代理。
+If this fails, do not start a full sync yet. Check cookies, user agent, and proxy
+configuration first.
 
-### 步骤 2：先小规模试跑
+### Step 2: Run A Small Trial Sync
 
 ```bash
-uv run grok-downloader sync --account andy --limit 20
+uv run grok-downloader sync --account demo --limit 20
 ```
 
-预期输出示例：
+Expected output:
 
 ```text
-sync done: account=andy pages=1 folders=2 posts=41 assets=63 downloaded=63 errors=0
+sync done: account=demo pages=1 folders=2 posts=18 assets=27 downloaded=27 errors=0
 ```
 
-说明：
+Notes:
 
-- `posts` 和 `assets` 是这次遍历中看到的数量，不一定等于最终唯一数量
-- 如果 `downloaded=0`，可能说明这批内容此前已经存在于本地
+- `posts` and `assets` are the counts observed during traversal, not
+  necessarily the final unique counts.
+- If `downloaded=0`, the items may already exist locally.
 
-### 步骤 3：做一次校验
+### Step 3: Verify The Archive
 
 ```bash
-uv run grok-downloader verify --account andy
+uv run grok-downloader verify --account demo
 ```
 
-预期输出示例：
+Expected output:
 
 ```text
-verify: account=andy posts=20 images=12 videos=8 thumbnails=10 downloaded=30 failed=0 missing=0 hash_mismatches=0
+verify: account=demo posts=18 images=10 videos=4 thumbnails=4 downloaded=18 failed=0 missing=0 hash_mismatches=0
 ```
 
-## 3. 全量同步示例
+## 3. Full Sync Example
 
 ```bash
-uv run grok-downloader sync --account andy --full --download-concurrency 8
+uv run grok-downloader sync --account demo --full --download-concurrency 8
 ```
 
-典型输出：
+Typical output:
 
 ```text
-sync done: account=andy pages=46 folders=2 posts=6356 assets=4773 downloaded=0 errors=0
+sync done: account=demo pages=12 folders=3 posts=420 assets=618 downloaded=74 errors=0
 ```
 
-如何理解这个结果：
+How to read this:
 
-- `pages=46`
-  说明确实遍历了多页 API 数据，而不是只拿首屏
-- `folders=2`
-  表示 folder 列表枚举到 2 个 folder
-- `posts=6356`
-  是遍历过程中见到的 post 总数，包含主列表和 folder 列表中的重复出现
-- `assets=4773`
-  是这次枚举中识别到的资产数
-- `downloaded=0`
-  代表这次运行没有新增需要下载的文件，不代表系统没有文件
+- `pages=12`
+  The tool traversed many API pages, not just the first rendered screen.
+- `folders=3`
+  The folder list returned three folders.
+- `posts=420`
+  This is the number of posts encountered during traversal, including repeated
+  appearances across root and folder lists.
+- `assets=618`
+  This is the number of assets recognized during this run.
+- `downloaded=74`
+  This run downloaded newly discovered files. A later run may report
+  `downloaded=0` if everything is already present locally.
 
-同步完成后马上跑：
+After the sync, run:
 
 ```bash
-uv run grok-downloader status --account andy
-uv run grok-downloader verify --account andy
+uv run grok-downloader status --account demo
+uv run grok-downloader verify --account demo
 ```
 
-## 4. 断点恢复示例
+## 4. Resume After Interruption
 
-场景：同步时网络闪断，或者某些媒体返回临时错误。
+Scenario: the network drops during sync, or some media URLs fail temporarily.
 
-先看状态：
+Check status first:
 
 ```bash
-uv run grok-downloader status --account andy
+uv run grok-downloader status --account demo
 ```
 
-如果有缺失或失败，再补下载：
+If there are missing or failed assets, download them:
 
 ```bash
-uv run grok-downloader download --account andy --concurrency 8
-uv run grok-downloader verify --account andy
+uv run grok-downloader download --account demo --concurrency 8
+uv run grok-downloader verify --account demo
 ```
 
-典型输出：
+Typical output:
 
 ```text
-download done: account=andy total=12 downloaded=10 already_present=1 failed=1
+download done: account=demo total=12 downloaded=10 already_present=1 failed=1
 ```
 
-这里的含义是：
+Meaning:
 
 - `downloaded`
-  本次真正新下载成功的数量
+  Files newly downloaded during this run.
 - `already_present`
-  SQLite 认为待处理，但实际文件已经存在并通过了当前流程
+  SQLite considered the asset pending, but the file was already present and
+  accepted by the current flow.
 - `failed`
-  本次补下载后仍失败的数量
+  Items that still failed after this retry.
 
-## 5. 查看 JSON 形式状态
+## 5. JSON Status Output
 
 ```bash
-uv run grok-downloader status --account andy --json
+uv run grok-downloader status --account demo --json
 ```
 
-适合脚本消费的场景包括：
+Useful for:
 
-- 自动巡检
-- 导出统计
-- 接入其他内部工具
+- automated health checks
+- exporting statistics
+- integration with local tools
 
-你可以关注这些字段：
+Fields to watch:
 
 - `posts`
 - `images`
@@ -165,124 +175,124 @@ uv run grok-downloader status --account andy --json
 - `missing`
 - `latest_run`
 
-## 6. Web UI 启动与访问
+## 6. Web UI Startup And Access
 
-### 前台启动
+### Foreground
 
 ```bash
 GROK_DOWNLOADER_WEB_TOKEN='replace-with-long-random-token' \
-  uv run grok-downloader web --account andy --host 127.0.0.1 --port 7860
+  uv run grok-downloader web --account demo --host 127.0.0.1 --port 7860
 ```
 
-控制台会输出：
+Console output:
 
 ```text
 web ui: http://127.0.0.1:7860
 ```
 
-浏览器首次访问：
+First browser visit:
 
 ```text
-http://127.0.0.1:7860/?token=你的令牌
+http://127.0.0.1:7860/?token=your-access-token
 ```
 
-### 后台启动
+### Background
 
 ```bash
 umask 077
-python - <<'PY' > archive/accounts/andy/web-token.txt
+python - <<'PY' > archive/accounts/demo/web-token.txt
 import secrets
 print(secrets.token_urlsafe(32))
 PY
-GROK_DOWNLOADER_WEB_TOKEN="$(cat archive/accounts/andy/web-token.txt)" \
-  setsid -f sh -c 'cd /path/to/grok-downloader && exec .venv/bin/grok-downloader web --account andy --host 127.0.0.1 --port 7860 > archive/accounts/andy/logs/web.log 2>&1 < /dev/null'
+GROK_DOWNLOADER_WEB_TOKEN="$(cat archive/accounts/demo/web-token.txt)" \
+  setsid -f sh -c 'cd /path/to/grok-downloader && exec .venv/bin/grok-downloader web --account demo --host 127.0.0.1 --port 7860 > archive/accounts/demo/logs/web.log 2>&1 < /dev/null'
 ```
 
-浏览器访问方式：
+Browser access:
 
 ```text
-http://127.0.0.1:7860/?token=web-token.txt 里的值
+http://127.0.0.1:7860/?token=value-from-web-token.txt
 ```
 
-## 7. Web UI 能看什么
+## 7. What The Web UI Shows
 
-列表页支持：
+The list page supports:
 
-- folder 过滤
-- media type 过滤
-- prompt 搜索
-- 时间正序/倒序
-- 分页加载更多
+- folder filtering
+- media type filtering
+- prompt search
+- ascending or descending time order
+- automatic pagination while scrolling
 
-详情页支持：
+The detail page supports:
 
-- 主媒体预览
-- prompt / originalPrompt
-- model / 分辨率
+- primary media preview
+- `prompt` / `originalPrompt`
+- model and resolution
 - folders
 - edges
-- assets 明细
+- asset details
 - raw JSON
 
-## 8. API 调用示例
+## 8. API Examples
 
-### 查询状态
+### Query Status
 
 ```bash
 curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
   http://127.0.0.1:7860/api/status
 ```
 
-### 查询列表
+### Query Posts
 
 ```bash
 curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
   "http://127.0.0.1:7860/api/posts?media=MEDIA_POST_TYPE_VIDEO&limit=5"
 ```
 
-返回结构示意：
+Example response shape:
 
 ```json
 {
   "items": [
     {
-      "id": "a884e521-322b-4e9e-a3e2-51f8f7d48340",
+      "id": "mock-video-001",
       "createTime": "2026-04-29T19:49:05.903892Z",
       "mediaType": "MEDIA_POST_TYPE_VIDEO",
       "modelName": "imagine_x_1",
-      "previewPath": "thumbs/example.jpg",
+      "previewPath": "thumbs/mock-video-001-thumb.png",
       "previewKind": "image"
     }
   ],
-  "total": 3113,
+  "total": 42,
   "limit": 5,
   "offset": 0
 }
 ```
 
-### 查询详情
+### Query A Detail Record
 
 ```bash
 curl -H "x-access-token: $GROK_DOWNLOADER_WEB_TOKEN" \
   http://127.0.0.1:7860/api/posts/<post_id>
 ```
 
-重点字段：
+Important fields:
 
 - `assets`
 - `folders`
 - `edges`
 - `raw`
 
-## 9. Docker 示例
+## 9. Docker Examples
 
-构建镜像：
+Build the image:
 
 ```bash
 docker build -t grok-downloader:local .
 ```
 
-挂载本地归档和配置后查看状态：
+Mount local archive and config, then check status:
 
 ```bash
 docker run --rm \
@@ -290,63 +300,64 @@ docker run --rm \
   -v "$PWD/config:/app/config:ro" \
   -e GROK_DOWNLOADER_ARCHIVE=/data/archive \
   grok-downloader:local \
-  grok-downloader status --account andy
+  grok-downloader status --account demo
 ```
 
-适用场景：
+Use cases:
 
-- 验证镜像可用性
-- 在不同机器上复用同一份归档
-- 将 CLI 运行环境和主机隔离
+- verify that the image works
+- reuse the same archive on another machine
+- isolate the CLI runtime from the host
 
-## 10. 常见排查示例
+## 10. Troubleshooting Examples
 
-### 例 1：`auth check` 失败
+### Example 1: `auth check` Fails
 
-优先检查：
+Check:
 
-- `sso` 是否过期
-- `cf_clearance` 是否仍有效
-- `user_agent` 是否与 cookie 获取环境相差太大
-- 是否需要代理
+- whether `sso` expired
+- whether `cf_clearance` is still valid
+- whether `user_agent` differs too much from the cookie acquisition environment
+- whether a proxy is required
 
-### 例 2：`sync` 很慢
+### Example 2: `sync` Is Slow
 
-先确认这不是误判。全量同步会：
+First confirm that this is not a false alarm. A full sync may:
 
-- 枚举主列表多页 cursor
-- 枚举所有 folder 分页
-- 对每个 post 拉 folder 关系
-- 下载或检查大量媒体
+- enumerate many root-list cursor pages
+- enumerate all folder pages
+- request folder relationships for each post
+- download or check many media files
 
-这类任务本来就不是秒级操作。
+This kind of job is not expected to finish in seconds.
 
-### 例 3：`verify` 出现 `missing > 0`
+### Example 3: `verify` Reports `missing > 0`
 
-处理方式：
+Recommended handling:
 
-1. 看 `metadata/failures/missing-assets.tsv`
-2. 跑 `download`
-3. 再跑 `verify`
+1. Check `metadata/failures/missing-assets.tsv`.
+2. Run `download`.
+3. Run `verify` again.
 
-### 例 4：浏览器打开 Web UI 但看不到媒体
+### Example 4: Web UI Opens But Media Does Not Load
 
-优先检查：
+Check:
 
-- 首次是否用了 `?token=...`
-- token 是否与当前 Web 进程一致
-- `/media/` 请求是否返回 401
-- 浏览器里是否已经写入 cookie
+- whether the first visit used `?token=...`
+- whether the token matches the current Web process
+- whether `/media/` requests return 401
+- whether the browser has received the cookie
 
-## 11. 推荐工作流
+## 11. Recommended Workflow
 
-如果你想把这个项目当作长期归档工具来用，建议固定流程：
+For long-term archive use:
 
-1. 新账号首次接入时先 `auth check`
-2. 先小规模 `sync --limit 20`
-3. 再跑正式 `sync --full`
-4. 必跑 `verify`
-5. 用 Web UI 抽查几个 folder 和派生链
-6. 后续定期重复 `sync --full` + `verify`
+1. Run `auth check` when onboarding a new account.
+2. Run a small `sync --limit 20`.
+3. Run the real `sync --full`.
+4. Always run `verify`.
+5. Use the Web UI to sample-check a few folders and relationship chains.
+6. Repeat `sync --full` + `verify` periodically.
 
-这套流程的目的不是“多打一遍命令”，而是把“采集成功”和“归档完整”分开验证。
+The point is to verify "collection succeeded" and "archive integrity holds" as
+separate checks.

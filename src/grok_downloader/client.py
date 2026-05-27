@@ -53,7 +53,7 @@ class GrokClient:
         )
         if response.status_code != 200:
             raise GrokClientError(
-                f"{path} failed with HTTP {response.status_code}",
+                response_error_message(path, response),
                 status_code=response.status_code,
             )
         try:
@@ -120,3 +120,27 @@ def normalize_impersonate(browser: str | None) -> str:
         if compatible:
             return f"chrome{compatible[-1]}"
     return "chrome"
+
+
+def response_error_message(path: str, response: Any) -> str:
+    status_code = getattr(response, "status_code", "unknown")
+    message = f"{path} failed with HTTP {status_code}"
+    if is_cloudflare_challenge(response):
+        return (
+            f"{message}; Cloudflare challenge detected. Refresh cf_clearance and keep "
+            "browser/user_agent aligned with the browser session that produced it; "
+            "also check proxy or egress IP changes."
+        )
+    return message
+
+
+def is_cloudflare_challenge(response: Any) -> bool:
+    headers = {str(key).lower(): str(value).lower() for key, value in response.headers.items()}
+    if headers.get("cf-mitigated") == "challenge":
+        return True
+    server = headers.get("server", "")
+    content_type = headers.get("content-type", "")
+    if "cloudflare" not in server or "text/html" not in content_type:
+        return False
+    body = str(getattr(response, "text", "") or "").lower()
+    return "just a moment" in body or "challenges.cloudflare.com" in body

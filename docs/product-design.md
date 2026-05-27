@@ -1,105 +1,117 @@
-# 产品设计
+# Product Design
 
-## 1. 产品定位
+**English** | [简体中文](zh-CN/product-design.md)
 
-`grok-downloader` 的定位不是“网页另存为脚本”，而是“Grok Imagine 个人资产归档器”。
+## 1. Positioning
 
-它面向的核心问题有两个：
+`grok-downloader` is not a "save the webpage" script. It is a personal archive
+tool for Grok Imagine assets.
 
-1. Grok Saved/Liked 页面本身是滚动懒加载的，浏览器界面并不天然等于完整数据集。
-2. 仅下载媒体文件不够，后续整理、检索、审计和复用依赖元数据、文件夹关系、派生关系和校验状态。
+It focuses on two problems:
 
-因此产品目标是把“远端可见资产”转换成“本地可验证、可浏览、可增量同步的归档系统”。
+1. The Grok Saved/Liked page is lazy-loaded, so the browser view is not a
+   reliable representation of the complete dataset.
+2. Media files alone are not enough. Search, review, audit, and reuse depend on
+   metadata, folder membership, derivation relationships, and verification
+   state.
 
-## 2. 目标用户
+The product goal is to turn remotely visible assets into a local archive system
+that can be verified, browsed, and incrementally synced.
 
-### 2.1 主要用户
+## 2. Target Users
 
-- 个人创作者
-  需要长期保存自己在 Grok Imagine 中收藏或生成的成果。
-- 研究/运营人员
-  需要离线回看 prompt、模型、分辨率、派生链路和素材来源。
-- 技术接手者
-  可能很久不接触项目，但需要快速理解系统并继续维护。
+### 2.1 Primary Users
 
-### 2.2 用户最关心的结果
+- Personal creators who want to preserve saved or generated Grok Imagine work.
+- Researchers or operators who need offline access to prompts, models,
+  resolution, derivation chains, and source assets.
+- Technical maintainers who may return to the project after a long break and
+  need to understand it quickly.
 
-- 我到底有没有把账号里“当前看得到的内容”全部存下来
-- 哪些是图片，哪些是视频，哪些只是缩略图
-- 某个作品属于哪些 folder，源头 prompt 是什么，是否由其他 post 派生而来
-- 如果下载中断，能不能继续，而不是重新来一遍
-- 本地归档之后能不能方便浏览，而不是只能翻 JSON
+### 2.2 Outcomes Users Care About
 
-## 3. 产品边界
+- Whether all currently visible account content has been archived.
+- Which assets are images, videos, thumbnails, or uploaded sources.
+- Which folders a work belongs to, what its prompt was, and whether it was
+  derived from another post.
+- Whether interrupted downloads can resume without starting over.
+- Whether the local archive is easy to browse without reading raw JSON by hand.
 
-### 3.1 已覆盖
+## 3. Product Boundaries
 
-- Grok Imagine Saved/Liked 主列表
-- folder 列表与 folder 维度 post 列表
-- post 自身及其嵌套 `images`、`videos`、`childPosts`、`inputMediaItems`
-- 媒体、缩略图、源图/源视频 URL
-- folder 关系、原始 JSON、派生边、下载状态、哈希和大小
-- 本地只读浏览界面
+### 3.1 Covered
 
-### 3.2 明确不做
+- Grok Imagine Saved/Liked root lists.
+- Folder lists and folder-scoped post lists.
+- Posts and nested `images`, `videos`, `childPosts`, and `inputMediaItems`.
+- Media URLs, thumbnail URLs, and source media URLs.
+- Folder relationships, raw JSON, derivation edges, download state, hashes, and
+  file sizes.
+- A local read-only browser UI.
 
-- 不做云端删除、取消收藏、移动 folder 等写操作
-- 不做 Grok 网站 UI 自动化滚动抓取
-- 不做多用户在线服务
-- 不把本地归档自动上传第三方对象存储
+### 3.2 Explicitly Not Covered
 
-这些边界是刻意保守的。项目的核心价值是稳定归档，不是替代 Grok 官方前端。
+- Cloud-side deletion, unliking, moving folders, or any other write operation.
+- Browser UI automation or scroll scraping.
+- Multi-user online service hosting.
+- Automatic uploads of the archive to third-party object storage.
 
-## 4. 核心使用场景
+These boundaries are intentionally conservative. The core value is reliable
+archiving, not replacing the official Grok frontend.
 
-### 场景 A：第一次全量备份
+## 4. Core Scenarios
 
-用户刚拿到账号 cookie，希望确认自己几百甚至几千个资产都能落地。
+### Scenario A: First Full Backup
 
-预期流程：
+A user has fresh account cookies and wants to confirm that hundreds or thousands
+of assets can be archived.
 
-1. 配置账号
-2. `auth check`
-3. `sync --full`
-4. `verify`
-5. 打开 Web UI 抽样核查
+Expected flow:
 
-### 场景 B：中断后的恢复
+1. Configure the account.
+2. Run `auth check`.
+3. Run `sync --full`.
+4. Run `verify`.
+5. Open the Web UI and sample-check the archive.
 
-同步到一半网络中断，或者媒体下载失败。
+### Scenario B: Recovery After Interruption
 
-预期流程：
+The network drops during sync, or some media downloads fail.
 
-1. 重新运行 `sync --full`
-2. 或直接运行 `download`
-3. 再跑 `verify`
+Expected flow:
 
-关键要求：
+1. Run `sync --full` again.
+2. Or run `download` directly.
+3. Run `verify` again.
 
-- 不重复破坏已有数据
-- 已成功的文件不重复下载
-- 失败项可追踪
+Key requirements:
 
-### 场景 C：离线浏览与检索
+- Existing successful data must not be damaged.
+- Files that already succeeded should not be downloaded again.
+- Failed items must remain traceable.
 
-用户已经完成归档，之后主要需求变成：
+### Scenario C: Offline Browsing And Review
 
-- 按 folder 查看
-- 搜索 prompt
-- 看图片/视频
-- 打开某条记录看 raw JSON 和依赖关系
+After the archive is complete, the main needs become:
 
-这就是 Web UI 的主要价值，它服务的是“归档之后的使用”，不是同步本身。
+- browse by folder
+- search prompts
+- view images and videos
+- inspect raw JSON and relationships for a post
 
-## 5. 产品结构设计
+This is the primary value of the Web UI. It serves archive consumption, not
+sync orchestration.
 
-产品由三部分组成：
+## 5. Product Structure
+
+The product has three parts.
 
 ### 5.1 CLI
 
-面向需要明确控制同步动作的用户。优点是稳定、可脚本化、适合运维。
+The CLI is for users who need explicit control over sync actions. It is stable,
+scriptable, and suitable for operations.
 
-命令集：
+Command set:
 
 - `auth check`
 - `sync`
@@ -108,184 +120,190 @@
 - `verify`
 - `web`
 
-设计原则：
+Design principles:
 
-- 命令语义单一，不把所有行为塞进一个子命令
-- 状态结果尽量可机器判断，失败时用非零退出码
-- 默认参数偏保守，例如 `sync` 不带 `--full` 时只做小批量验证
+- Each command has a clear single responsibility.
+- Output should be easy for shell scripts and operators to consume.
+- Defaults are conservative. For example, `sync` without `--full` is suitable
+  for a smaller trial run.
 
-### 5.2 本地归档
+### 5.2 Local Archive
 
-这是产品的核心资产层。没有它，CLI 和 Web UI 都只是壳。
+The archive is the core asset layer. Without it, the CLI and Web UI are only
+wrappers.
 
-设计要求：
+Requirements:
 
-- 多账号隔离
-- 文件和索引分离
-- 支持断点恢复
-- 支持审计和复查
+- account isolation
+- separate file storage and index storage
+- resumable operation
+- auditable raw data
 
 ### 5.3 Web UI
 
-这是归档内容的消费层，不参与写入。
+The Web UI is the archive consumption layer and does not write data.
 
-设计原则：
+Design principles:
 
-- 只读
-- 无布局抖动懒加载与平滑淡入（利用图片尺寸预占位，配以骨架屏效果）
-- 自动滚动懒加载（基于 `IntersectionObserver` 自动触发分页，无手动 Load More 按钮）
-- 可以快速扫图/扫视频
-- 可以按 folder、媒体类型、prompt、时间过滤
-- 详情里直接看到媒体、prompt、raw JSON、folder、依赖关系
+- read-only behavior
+- stable lazy loading without layout shift, using media dimensions and skeleton
+  placeholders
+- automatic pagination through `IntersectionObserver`, without a manual Load
+  More button
+- fast scanning of images and videos
+- filtering by folder, media type, prompt, and time
+- detail views with media, prompts, raw JSON, folders, and relationships
 
-## 6. 关键产品决策
+## 6. Key Product Decisions
 
-### 决策 1：不用浏览器滚动抓取，改用 API cursor 枚举
+### Decision 1: Use API Cursor Enumeration Instead Of Browser Scrolling
 
-原因：
+Reasons:
 
-- Saved 页面是懒加载的，UI 滚动高度和实际资产总量并不构成可靠契约
-- 前端实现随时可能改版，但 API 响应中的 `nextCursor` 是更稳定的枚举手段
-- API 方案更容易落盘原始页面 JSON，便于审计
+- The Saved page is lazy-loaded, so the current DOM does not prove the account's
+  total asset count.
+- The frontend may change at any time, while `nextCursor` is a clearer
+  enumeration contract.
+- API responses can be stored as raw JSON for later audit and replay.
 
-### 决策 2：媒体文件必须和 SQLite 索引并存
+### Decision 2: Keep Media Files And SQLite Together
 
-只下载文件有两个问题：
+Downloading only files creates two problems:
 
-- 你无法知道哪些文件是主图、缩略图还是源图
-- 你无法判断哪些失败、哪些缺失、哪些已校验
+- The archive cannot tell whether a file is primary media, a thumbnail, or a
+  source upload.
+- The archive cannot reliably report failed, missing, or verified files.
 
-因此产品把 SQLite 视为“归档控制面”，把文件系统视为“归档数据面”。
+SQLite is the archive control plane; the filesystem is the archive data plane.
 
-### 决策 3：Web UI 必须只读
+### Decision 3: Keep The Web UI Read-Only
 
-原因：
+Reasons:
 
-- 浏览和写入解耦，降低误操作风险
-- 可以在同步过程中仍安全浏览旧数据
-- 对部署和权限设计更简单
+- Browsing and writes stay decoupled, reducing operational risk.
+- The UI can safely browse old data while sync is running.
+- Deployment and permissions remain simpler.
 
-### 决策 4：显式保存原始 JSON
+### Decision 4: Store Raw JSON Explicitly
 
-原因：
+Reasons:
 
-- 当前字段集可能不够未来分析使用
-- 当代码提取逻辑需要升级时，可基于既有归档回放和补提取
-- 这让本地归档具备“可重解释”的能力
+- Future analysis may need fields that the current extractor does not use.
+- Extractor upgrades can replay existing archived payloads.
+- The archive remains reinterpretable as the API evolves.
 
-## 7. 信息架构
+## 7. Information Architecture
 
-### 7.1 归档中的核心对象
+### 7.1 Core Archive Objects
 
 - `post`
-  一条 Grok Imagine 记录，是浏览和关系分析的中心对象。
+  A Grok Imagine record and the central object for browsing and relationship
+  analysis.
 - `asset`
-  属于某个 post 的媒体资源，可以是主媒体、缩略图、源图等。
+  A media object that belongs to a post. It can be primary media, a thumbnail,
+  a source upload, or another extracted URL.
 - `folder`
-  远端 folder 的本地镜像。
+  A local snapshot of a remote folder.
 - `post_edge`
-  post 与 post 之间的派生或嵌套关系。
+  A derivation or nesting relationship between posts.
 - `sync_run`
-  一次同步任务的审计记录。
+  An audit record for one sync task.
 
-### 7.2 Web UI 的主要视图
+### 7.2 Main Web UI Views
 
-- 列表页
-  批量浏览，用于“扫”
-- 详情页
-  深入查看单条记录，用于“查”
+- List view
+  Bulk browsing and scanning.
+- Detail view
+  Deep inspection of one post.
 
-筛选维度：
+Filter dimensions:
 
-- 账号
+- account
 - folder
-- 媒体类型
-- prompt 关键字
-- 时间排序
+- media type
+- prompt keyword
+- time order
 
-## 8. 典型用例
+## 8. Typical Use Cases
 
-### 用例 1：确认某个视频作品是否已经完整落盘
+### Use Case 1: Confirm A Video Was Fully Archived
 
-操作：
+1. Open the Web UI.
+2. Search by prompt or time.
+3. Open the detail view.
+4. Confirm that `assets` contains `video/media` and thumbnails.
+5. Run `verify` for final integrity confirmation.
 
-1. 打开 Web UI
-2. 搜索 prompt 或按时间定位
-3. 进入详情页
-4. 检查 `assets` 中是否存在 `video/media` 和缩略图
-5. 再跑 `verify` 做最终校验
+### Use Case 2: Analyze How An Image Was Derived
 
-### 用例 2：分析某个图片是如何派生出来的
+1. Check `originalPostId` and `parentPostId` in the detail view.
+2. Review `edges`.
+3. Combine raw JSON with `inputMediaItems` to reconstruct source context.
 
-操作：
+### Use Case 3: Sync New Assets Without Re-downloading Everything
 
-1. 在详情页查看 `originalPostId`、`parentPostId`
-2. 查看 `edges`
-3. 结合 `raw JSON` 和 `inputMediaItems` 还原来源
+1. Run `sync --full`.
+2. The system re-enumerates remote lists and updates the index.
+3. Only new or missing assets become `pending`.
+4. The downloader handles only pending items.
 
-### 用例 3：同步新资产但不想重复全量下载
+## 9. Usability Design
 
-操作：
+### 9.1 Why The Web UI Stays Simple
 
-1. 运行 `sync --full`
-2. 系统重新枚举列表并更新索引
-3. 仅新增或缺失资产进入 `pending`
-4. 下载器只处理待处理项目
+The primary problem is archive reliability, not frontend complexity. The current
+Web UI is intentionally:
 
-## 9. 可用性设计
+- single-page
+- low-dependency
+- read-only
+- quick to start locally
 
-### 9.1 为什么 Web UI 不做复杂前端
+This makes it easier to maintain and practical for emergency browsing.
 
-因为这个项目的核心问题是归档可靠性，不是前端炫技。当前 Web UI 故意保持：
+### 9.2 Why Raw API Pages Are Preserved
 
-- 单页
-- 低依赖
-- 只读
-- 可在本地快速启动
+When the project is revisited months later, `metadata/pages/` and
+`metadata/posts/` show exactly what was received from the API at sync time. This
+is safer than guessing from memory or from today's frontend behavior.
 
-这样更适合长期维护和应急浏览。
+## 10. Non-Functional Requirements
 
-### 9.2 为什么要保留原始 API 页面 JSON
+### 10.1 Reliability
 
-这是“未来自己感谢现在自己”的设计。
+- Sync uses a write lock.
+- Downloads support retry.
+- Verification recomputes hashes.
+- Sync run results are traceable.
 
-当你半年后忘了接口细节，或者 Grok 返回结构新增字段时，`metadata/pages/` 和 `metadata/posts/` 可以直接告诉你当时到底收到了什么，而不用重新猜。
+### 10.2 Safety
 
-## 10. 非功能要求
+- Tokens and cookies are not printed.
+- Web access supports a token.
+- Media paths are constrained to the archive root.
+- Sensitive data is not committed.
 
-### 10.1 可靠性
+### 10.3 Maintainability
 
-- 同步支持写锁
-- 下载支持失败重试
-- 校验支持哈希复算
-- 同步 run 结果可追踪
+- Module boundaries are clear.
+- Raw responses are auditable.
+- README is the entry point; topic docs cover product design, architecture,
+  operations, and examples.
 
-### 10.2 安全性
+## 11. Future Extension Ideas
 
-- 不输出 token/cookie
-- Web 访问支持 token
-- 媒体路径做目录约束
-- 敏感数据不进版本库
+Recommended priority:
 
-### 10.3 可维护性
+1. Improve detail navigation, such as jumping directly through related posts.
+2. Add exports such as folder-level CSV or JSON reports.
+3. Add finer verification reports by asset role.
+4. Add incremental change views, such as "posts/assets added in this sync."
 
-- 模块边界清晰
-- 原始响应可审计
-- README 作为入口，专题文档分别解释产品、架构、运维和例子
+Lower priority:
 
-## 11. 后续可扩展方向
+- cloud write operations
+- heavy frontend framework rewrites
+- browsing directly from the file tree without SQLite
 
-如果后续要继续演进，优先级建议如下：
-
-1. 增加更完整的 Web 详情页导航，例如从 edge 直接跳转关联 post
-2. 增加导出能力，例如导出某个 folder 的 CSV/JSON 报表
-3. 增加更细粒度的校验报告，例如按 role 输出缺失统计
-4. 增加增量变更视图，例如“本次 sync 新增了哪些 post/asset”
-
-不建议优先做的方向：
-
-- 云端写操作
-- 前端重型框架重构
-- 绕过 SQLite 直接基于文件树做浏览
-
-这些方向会提高复杂度，但对归档主价值提升有限。
+These directions add complexity without improving the core archive value enough
+to justify doing them first.
