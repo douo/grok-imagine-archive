@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlparse
 
 from curl_cffi.requests import Session
 from curl_cffi.requests.impersonate import BrowserTypeLiteral
@@ -23,15 +24,29 @@ class GrokClientError(RuntimeError):
 class GrokClient:
     account: AccountConfig
     timeout: int = 60
+    impersonate: str = field(init=False)
+    session: Session = field(init=False)
+    proxies: dict[str, str] | None = field(init=False)
 
     def __post_init__(self) -> None:
         self.impersonate = normalize_impersonate(self.account.browser)
-        self.session = Session(impersonate=self.impersonate)
+        self.session = self._new_session()
         self.proxies = (
             {"http": self.account.proxy, "https": self.account.proxy}
             if self.account.proxy
             else None
         )
+
+    def _new_session(self) -> Session:
+        return Session(impersonate=self.impersonate)
+
+    def reset_session(self) -> None:
+        """Drop TLS session state (used after Cloudflare 403 challenges)."""
+        try:
+            self.session.close()
+        except Exception:
+            pass
+        self.session = self._new_session()
 
     def close(self) -> None:
         self.session.close()
@@ -44,14 +59,23 @@ class GrokClient:
 
     def post(self, path: str, payload: dict[str, Any]) -> Any:
         url = f"https://grok.com{path}"
+        headers = build_headers(
+            self.account,
+            method="POST",
+            path=path,
+            referer="https://grok.com/imagine/saved",
+            origin="https://grok.com",
+        )
         response = self.session.post(
             url,
             data=json.dumps(payload, separators=(",", ":")),
-            headers=build_headers(self.account),
+            headers=headers,
             timeout=self.timeout,
             proxies=self.proxies,
         )
         if response.status_code != 200:
+            if is_cloudflare_challenge(response):
+                self.reset_session()
             raise GrokClientError(
                 response_error_message(path, response),
                 status_code=response.status_code,
@@ -62,12 +86,17 @@ class GrokClient:
             raise GrokClientError(f"{path} returned non-JSON response: {exc}") from exc
 
     def get(self, url: str, *, timeout: int | None = None, stream: bool = True):
+        parsed = urlparse(url)
         headers = build_headers(
             self.account,
             content_type="application/octet-stream",
             origin="https://grok.com",
             referer="https://grok.com/imagine",
+            method="GET",
+            path=parsed.path or "/",
         )
+        # Asset CDNs do not need JSON content-type.
+        headers.pop("Content-Type", None)
         return self.session.get(
             url,
             headers=headers,
@@ -129,7 +158,14 @@ def response_error_message(path: str, response: Any) -> str:
         return (
             f"{message}; Cloudflare challenge detected. Refresh cf_clearance and keep "
             "browser/user_agent aligned with the browser session that produced it; "
-            "also check proxy or egress IP changes."
+            "cf_clearance is IP-bound — use the same egress/proxy as the browser; "
+            "also paste full browser Cookie into cf_cookies when possible "
+            "(x-anonuserid/x-challenge/x-signature/x-userid)."
+        )
+    if is_grok_antibot(response):
+        return (
+            f"{message}; Grok anti-bot rejected the request (code:7). "
+            "Check x-statsig-id generation, cookie session tokens, and UA/TLS alignment."
         )
     return message
 
@@ -144,3 +180,23 @@ def is_cloudflare_challenge(response: Any) -> bool:
         return False
     body = str(getattr(response, "text", "") or "").lower()
     return "just a moment" in body or "challenges.cloudflare.com" in body
+
+
+def is_grok_antibot(response: Any) -> bool:
+    """Detect grok application-level anti-bot rejection (not Cloudflare HTML)."""
+    body = str(getattr(response, "text", "") or "")
+    if not body:
+        return False
+    lowered = body.lower()
+    if "anti-bot" in lowered or "request rejected by anti-bot" in lowered:
+        return True
+    try:
+        data = response.json()
+    except Exception:
+        return False
+    if not isinstance(data, dict):
+        return False
+    err = data.get("error")
+    if isinstance(err, dict) and err.get("code") == 7:
+        return True
+    return data.get("code") == 7

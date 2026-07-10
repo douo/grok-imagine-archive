@@ -5,9 +5,17 @@ enabled = true
 # Paste only into config/accounts.toml, never into this example file.
 sso = "REPLACE_WITH_SSO_COOKIE_VALUE"
 cf_clearance = "REPLACE_WITH_CF_CLEARANCE_IF_NEEDED"
+
+# Optional but recommended: paste the FULL browser Cookie header (or the extra
+# tokens). Useful keys: x-anonuserid, x-challenge, x-signature, x-userid, __cf_bm.
+# These must come from the same browser session as cf_clearance.
 cf_cookies = ""
 
 # Keep these aligned with the browser session that produced the cookies.
-user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
-browser = "chrome136"
+# curl_cffi currently impersonates up to chrome146; higher versions map down.
+user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+browser = "chrome146"
+
+# cf_clearance is IP-bound. If the browser and this host use different egress
+# IPs, set proxy to the same exit as the browser session.
 proxy = ""
