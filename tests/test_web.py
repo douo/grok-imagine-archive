@@ -113,6 +113,13 @@ def test_web_posts_are_account_aware_and_search_ids(tmp_path, monkeypatch) -> No
     assert folder_search["total"] == 1
     assert folder_search["items"][0]["id"] == "web-post-1"
 
+    video_only = client.get("/api/posts", params={"media": "MEDIA_POST_TYPE_VIDEO"}).json()
+    assert video_only["total"] == 1
+    assert video_only["items"][0]["id"] == "other-post-1"
+
+    upload_only = client.get("/api/posts", params={"has_upload": "1"}).json()
+    assert upload_only["total"] == 0
+
 
 def test_web_detail_summarizes_original_and_nested_relationships(
     tmp_path, monkeypatch
@@ -181,3 +188,10 @@ def test_web_detail_summarizes_original_and_nested_relationships(
             "mediaType": "MEDIA_POST_TYPE_IMAGE",
         }
     ]
+
+    tree_posts = client.get("/api/posts", params={"account": "web", "has_tree": "1"}).json()
+    tree_ids = {item["id"] for item in tree_posts["items"]}
+    assert {"original-parent", "nested-parent", "child", "derived-child"} <= tree_ids
+
+    models = client.get("/api/models", params={"account": "web"}).json()
+    assert isinstance(models, list)

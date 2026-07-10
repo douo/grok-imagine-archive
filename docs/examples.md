@@ -216,23 +216,34 @@ http://127.0.0.1:7860/?token=value-from-web-token.txt
 
 ## 7. What The Web UI Shows
 
-The list page supports:
+The list page is media-first (Grok Imagine–like dark masonry) and supports:
 
-- folder filtering
-- media type filtering
-- prompt search
-- ascending or descending time order
-- automatic pagination while scrolling
+- account / folder / model filters
+- quick chips: All, Images, Videos, Uploads, Has tree
+- search across prompt, model name, and post ID (paste a full ID to jump)
+- active filter tags with one-click clear
+- newest / oldest sort
+- infinite scroll pagination
+- deep links that preserve filters and open a specific post
+
+Keyboard shortcuts:
+
+- `/` focus search
+- `J` jump to post ID
+- `←` / `→` previous / next post in the current result list
+- `C` copy post ID, `L` copy shareable link
+- `Esc` close detail, `?` toggle help
 
 The detail page supports:
 
-- primary media preview
+- primary media preview with prev/next navigation
 - `prompt` / `originalPrompt`
 - model and resolution
-- folders
-- edges
-- asset details
+- folders (with “Filter” to narrow the grid)
+- relationship edges
+- asset open / copy path
 - raw JSON
+- “Show in grid” to locate the tile after closing
 
 ## 8. API Examples
 
@@ -248,6 +259,13 @@ curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
 ```bash
 curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
   "http://127.0.0.1:7860/api/posts?media=MEDIA_POST_TYPE_VIDEO&limit=5"
+
+# Extra filters: has_video=1, has_upload=1, has_tree=1, model=..., q=<prompt-or-id>
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
+  "http://127.0.0.1:7860/api/posts?has_tree=1&q=mock-image&limit=10"
+
+curl -H "x-access-token: $GROK_IMAGINE_ARCHIVE_WEB_TOKEN" \
+  "http://127.0.0.1:7860/api/models"
 ```
 
 Example response shape:

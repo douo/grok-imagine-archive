@@ -146,13 +146,18 @@ The Web UI is the archive consumption layer and does not write data.
 Design principles:
 
 - read-only behavior
+- visual style close to Grok Imagine (dark, media-first masonry, hover metadata)
 - stable lazy loading without layout shift, using media dimensions and skeleton
   placeholders
 - automatic pagination through `IntersectionObserver`, without a manual Load
   More button
 - fast scanning of images and videos
-- filtering by folder, media type, prompt, and time
-- detail views with media, prompts, raw JSON, folders, and relationships
+- rich filtering: account, folder, model, media type, uploads, relationship tree,
+  prompt / ID search, and time order
+- URL-addressable filters and post deep links for sharing and return visits
+- keyboard-first navigation for locating and flipping through posts
+- detail views with media, prompts, raw JSON, folders, relationships, and
+  locate-in-grid
 
 ## 6. Key Product Decisions
 
@@ -220,8 +225,11 @@ Filter dimensions:
 
 - account
 - folder
-- media type
-- prompt keyword
+- model name
+- media type (image / video)
+- upload-source presence
+- relationship tree presence
+- prompt / post ID / model keyword search
 - time order
 
 ## 8. Typical Use Cases
